@@ -102,3 +102,54 @@ export async function updateEvent(idToken, eventId, payload) {
   }
   return data;
 }
+
+export async function uploadParticipantsCsv(idToken, eventId, file) {
+  const form = new FormData();
+  form.append("file", file);
+
+  const res = await fetch(`${API_BASE}/events/${eventId}/participants/upload`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: form,
+  });
+
+  const data = await safeJson(res);
+  if (!res.ok) {
+    const err = new Error(data?.message || "Upload failed");
+    err.status = res.status;
+    err.details = data;
+    throw err;
+  }
+  return data; // { ok, inserted, total }
+}
+
+export async function getParticipants(idToken, eventId) {
+  const res = await fetch(`${API_BASE}/events/${eventId}/participants`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+
+  const data = await safeJson(res);
+  if (!res.ok) {
+    const err = new Error(data?.message || "Fetch participants failed");
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+export async function publishEvent(idToken, eventId) {
+  const res = await fetch(`${API_BASE}/events/${eventId}/publish`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+
+  const data = await safeJson(res);
+  if (!res.ok) {
+    const err = new Error(data?.message || "Publish failed");
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
