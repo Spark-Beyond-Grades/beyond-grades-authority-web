@@ -153,3 +153,18 @@ export async function publishEvent(idToken, eventId) {
   }
   return data;
 }
+
+export async function closeEvent(idToken, eventId) {
+  const res = await fetch(`${API_BASE}/events/${eventId}/close`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+
+  const data = await safeJson(res);
+  if (!res.ok) {
+    const err = new Error(data?.message || "Close failed");
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
