@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithMicrosoft } from "@/lib/authMicrosoft";
-import { authSync } from "@/lib/api";
+import { authSync} from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,17 +18,16 @@ export default function LoginPage() {
       const { user, idToken } = await signInWithMicrosoft();
 
       // ✅ Backend gatekeeper check
-      const data = await authSync(idToken);
+      await authSync(idToken);
 
-      console.log("✅ Authorized:", data.authority);
-      setMsg(`✅ Authorized as ${user?.email}`);
+      // ✅ store token for dashboard/api calls
+      localStorage.setItem("bg_id_token", idToken);
 
       // redirect to dashboard
       router.push("/dashboard");
     } catch (e) {
       console.log("❌ Login/Auth error:", e?.message);
 
-      // 403 = not allowlisted
       if (e?.status === 403) {
         router.push("/access-denied");
         return;
