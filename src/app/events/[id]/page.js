@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getEventById, updateEvent } from "@/lib/api";
+import {
+  getEventById,
+  updateEvent,
+  publishEvent,
+  uploadParticipantsCsv,
+  getParticipants,
+} from "@/lib/api";
 
 const EVENT_TYPES = [
   { value: "CLUB", label: "Club" },
@@ -57,6 +63,16 @@ export default function EventOverviewPage() {
   const [skills, setSkills] = useState([]);
   const [customSkill, setCustomSkill] = useState("");
 
+  const [participantsCount, setParticipantsCount] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState(null);
+
+  const [publishing, setPublishing] = useState(false);
+  const [publishMsg, setPublishMsg] = useState(null);
+
+  const isPublished = event?.status === "PUBLISHED";
+  const isClosed = event?.status === "CLOSED" || !!event?.closeAtActual;
+
   const token = useMemo(() => {
     if (typeof window === "undefined") return null;
     return localStorage.getItem("bg_id_token");
@@ -73,6 +89,8 @@ export default function EventOverviewPage() {
       const data = await getEventById(token, id);
       const ev = data.event;
       setEvent(ev);
+      const p = await getParticipants(token, id);
+      setParticipantsCount((p.participants || []).length);
 
       setName(ev?.name || "");
       setType(ev?.type || "OTHER");
@@ -581,6 +599,85 @@ export default function EventOverviewPage() {
               </div>
             </div>
 
+            <div className="pt-2">
+              <h2 className="text-base font-semibold text-brand-text">
+                Participants
+              </h2>
+              <p className="text-sm text-brand-muted mt-1">
+                Upload a CSV of participants. Current:{" "}
+                <span className="font-medium">{participantsCount}</span>
+              </p>
+
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="text-sm font-medium text-brand-text">
+                  CSV Format
+                </div>
+                <p className="text-xs text-brand-muted mt-1">
+                  Columns:{" "}
+                  <span className="font-mono">
+                    name,email,rollNumber,committee,level,position
+                  </span>
+                </p>
+
+                <div className="mt-3 flex items-center gap-3">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+
+                      setUploadMsg(null);
+                      setUploading(true);
+
+                      try {
+                        const tokenNow = localStorage.getItem("bg_id_token");
+                        if (!tokenNow) {
+                          router.push("/login");
+                          return;
+                        }
+
+                        const data = await uploadParticipantsCsv(
+                          tokenNow,
+                          id,
+                          file
+                        );
+                        setUploadMsg(
+                          `✅ Uploaded ${data.inserted}/${data.total} participants`
+                        );
+
+                        // refresh count
+                        const p = await getParticipants(tokenNow, id);
+                        setParticipantsCount((p.participants || []).length);
+                      } catch (err) {
+                        const details = err?.details?.errors?.slice?.(0, 3);
+                        if (details?.length) {
+                          setUploadMsg(
+                            `❌ ${err.message}. Example: row ${details[0].row} ${details[0].field} - ${details[0].message}`
+                          );
+                        } else {
+                          setUploadMsg(`❌ ${err.message || "Upload failed"}`);
+                        }
+                      } finally {
+                        setUploading(false);
+                        e.target.value = "";
+                      }
+                    }}
+                    className="block w-full text-sm"
+                    disabled={uploading}
+                  />
+
+                  {uploading && (
+                    <span className="text-xs text-brand-muted">
+                      Uploading...
+                    </span>
+                  )}
+                </div>
+
+                {uploadMsg && <div className="mt-3 text-sm">{uploadMsg}</div>}
+              </div>
+            </div>
+
             <div className="flex items-center justify-end gap-3">
               <button
                 onClick={load}
@@ -600,6 +697,70 @@ export default function EventOverviewPage() {
             </div>
           </div>
         </div>
+
+        <div className="mt-6 flex items-center justify-between">
+          <div className="text-xs text-brand-muted">
+            Publish locks the event for participants.
+          </div>
+
+          <button
+            type="button"
+            disabled={publishing || isPublished || isClosed}
+            onClick={async () => {
+              setPublishMsg(null);
+              setPublishing(true);
+
+              try {
+                const tokenNow = localStorage.getItem("bg_id_token");
+                if (!tokenNow) {
+                  router.push("/login");
+                  return;
+                }
+
+                // save latest values first (important)
+                await updateEvent(tokenNow, id, {
+                  name,
+                  type,
+                  description,
+                  openAt: openAt ? new Date(openAt).toISOString() : null,
+                  closeAtTentative: closeAtTentative
+                    ? new Date(closeAtTentative).toISOString()
+                    : null,
+                  levels,
+                  committees,
+                  skills,
+                });
+
+                const data = await publishEvent(tokenNow, id);
+                setEvent(data.event);
+                const refreshed = await getEventById(tokenNow, id);
+                setEvent(refreshed.event);
+                const p = await getParticipants(tokenNow, id);
+                setParticipantsCount((p.participants || []).length);
+                router.push(`/events/${id}/published`);
+              } catch (e) {
+                setPublishMsg(`❌ ${e.message || "Publish failed"}`);
+              } finally {
+                setPublishing(false);
+              }
+            }}
+            className="rounded-xl bg-brand-secondary text-white font-medium px-5 py-2 hover:opacity-95 disabled:opacity-60"
+          >
+            {isClosed
+              ? "Closed"
+              : isPublished
+              ? "Published"
+              : publishing
+              ? "Publishing..."
+              : "Publish Event"}
+          </button>
+        </div>
+
+        {publishMsg && (
+          <div className="mt-3 text-sm rounded-lg p-3 border border-slate-200 bg-white text-brand-text">
+            {publishMsg}
+          </div>
+        )}
 
         <div className="mt-4 text-xs text-brand-muted">
           Next step: add Skills and Questions setup.
