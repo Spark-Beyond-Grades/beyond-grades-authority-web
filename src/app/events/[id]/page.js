@@ -8,6 +8,7 @@ import {
   publishEvent,
   uploadParticipantsCsv,
   getParticipants,
+  closeEvent,
 } from "@/lib/api";
 
 const EVENT_TYPES = [
@@ -73,6 +74,11 @@ export default function EventOverviewPage() {
   const isPublished = event?.status === "PUBLISHED";
   const isClosed = event?.status === "CLOSED" || !!event?.closeAtActual;
 
+  const isEditable = event?.effectiveStatus === "DRAFT";
+
+  const [closing, setClosing] = useState(false);
+  const [actionMsg, setActionMsg] = useState(null);
+
   const token = useMemo(() => {
     if (typeof window === "undefined") return null;
     return localStorage.getItem("bg_id_token");
@@ -82,14 +88,15 @@ export default function EventOverviewPage() {
     setError(null);
     setLoading(true);
     try {
-      if (!token) {
+      const tokenNow = localStorage.getItem("bg_id_token");
+      if (!tokenNow) {
         router.push("/login");
         return;
       }
-      const data = await getEventById(token, id);
+      const data = await getEventById(tokenNow, id);
       const ev = data.event;
       setEvent(ev);
-      const p = await getParticipants(token, id);
+      const p = await getParticipants(tokenNow, id);
       setParticipantsCount((p.participants || []).length);
 
       setName(ev?.name || "");
@@ -180,16 +187,57 @@ export default function EventOverviewPage() {
               <StatusChip status={event?.effectiveStatus} />
             </div>
             <p className="text-sm text-brand-muted mt-1">
-              Edit draft event information.
+              {isEditable
+                ? "Complete setup and publish."
+                : "This event is live. Editing is locked."}
             </p>
           </div>
-
           <button
             onClick={() => router.push("/dashboard")}
             className="rounded-xl border border-slate-200 bg-white text-brand-text font-medium px-4 py-2 hover:bg-slate-50"
           >
             Back
           </button>
+        </div>
+        <div className="mt-4 flex items-center gap-3">
+          {event?.effectiveStatus === "OPEN" && (
+            <button
+              type="button"
+              disabled={closing}
+              onClick={async () => {
+                const yes = confirm(
+                  "Close feedback now? This cannot be undone."
+                );
+                if (!yes) return;
+
+                setActionMsg(null);
+                setClosing(true);
+                try {
+                  const tokenNow = localStorage.getItem("bg_id_token");
+                  if (!tokenNow) {
+                    router.push("/login");
+                    return;
+                  }
+                  const data = await closeEvent(tokenNow, id);
+                  setEvent(data.event);
+                  setActionMsg("✅ Feedback closed");
+                } catch (e) {
+                  setActionMsg(`❌ ${e.message || "Close failed"}`);
+                } finally {
+                  setClosing(false);
+                }
+              }}
+              className="rounded-xl bg-status-closed text-white font-medium px-4 py-2 hover:opacity-95 disabled:opacity-60"
+            >
+              {closing ? "Closing..." : "Close Feedback"}
+            </button>
+          )}
+
+          {actionMsg && (
+            <div className="text-sm rounded-lg px-3 py-2 border border-slate-200 bg-white text-brand-text">
+              {actionMsg}
+            </div>
+          )}
         </div>
 
         {error && (
@@ -205,9 +253,10 @@ export default function EventOverviewPage() {
                 Event Name
               </label>
               <input
+                disabled={!isEditable}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent disabled:opacity-60 disabled:bg-slate-50"
                 placeholder="e.g., IIC Recruitment Drive 2026"
               />
             </div>
@@ -217,9 +266,10 @@ export default function EventOverviewPage() {
                 Event Type
               </label>
               <select
+                disabled={!isEditable}
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent disabled:opacity-60 disabled:bg-slate-50"
               >
                 {EVENT_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -234,10 +284,11 @@ export default function EventOverviewPage() {
                 Description (optional)
               </label>
               <textarea
+                disabled={!isEditable}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={5}
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent disabled:opacity-60 disabled:bg-slate-50"
                 placeholder="Short context about this event..."
               />
             </div>
@@ -256,10 +307,11 @@ export default function EventOverviewPage() {
                     Feedback Opening Date & Time
                   </label>
                   <input
+                    disabled={!isEditable}
                     type="datetime-local"
                     value={openAt}
                     onChange={(e) => setOpenAt(e.target.value)}
-                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent disabled:opacity-60 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -268,10 +320,11 @@ export default function EventOverviewPage() {
                     Feedback Closing Date & Time
                   </label>
                   <input
+                    disabled={!isEditable}
                     type="datetime-local"
                     value={closeAtTentative}
                     onChange={(e) => setCloseAtTentative(e.target.value)}
-                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent disabled:opacity-60 disabled:bg-slate-50"
                   />
                 </div>
               </div>
@@ -295,13 +348,15 @@ export default function EventOverviewPage() {
 
                 <div className="mt-2 flex gap-2">
                   <input
+                    disabled={!isEditable}
                     value={newLevel}
                     onChange={(e) => setNewLevel(e.target.value)}
-                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent"
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent disabled:opacity-60 disabled:bg-slate-50"
                     placeholder="e.g., Core, Senior, Junior"
                   />
                   <button
                     type="button"
+                    disabled={!isEditable}
                     onClick={() => {
                       const v = newLevel.trim();
                       if (!v) return;
@@ -324,6 +379,7 @@ export default function EventOverviewPage() {
                       {lv}
                       <button
                         type="button"
+                        disabled={!isEditable}
                         onClick={() => {
                           const nextLevels = levels.filter((x) => x !== lv);
                           const nextCommittees = committees.map((c) => ({
@@ -357,13 +413,15 @@ export default function EventOverviewPage() {
 
                 <div className="mt-2 flex gap-2">
                   <input
+                    disabled={!isEditable}
                     value={newCommittee}
                     onChange={(e) => setNewCommittee(e.target.value)}
-                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent"
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent disabled:opacity-60 disabled:bg-slate-50"
                     placeholder="e.g., Marketing, Tech, Operations"
                   />
                   <button
                     type="button"
+                    disabled={!isEditable}
                     onClick={() => {
                       const v = newCommittee.trim();
                       if (!v) return;
@@ -391,12 +449,13 @@ export default function EventOverviewPage() {
                       </div>
                       <button
                         type="button"
+                        disabled={!isEditable}
                         onClick={() =>
                           setCommittees(
                             committees.filter((x) => x.name !== c.name)
                           )
                         }
-                        className="text-sm text-slate-400 hover:text-slate-700"
+                        className="text-sm text-slate-400 hover:text-slate-700 disabled:opacity-60"
                       >
                         Remove
                       </button>
@@ -457,9 +516,11 @@ export default function EventOverviewPage() {
                               return (
                                 <td key={lv} className="px-4 py-3">
                                   <input
+                                    disabled={!isEditable}
                                     type="checkbox"
                                     checked={checked}
                                     onChange={(e) => {
+                                      if (!isEditable) return;
                                       const next = committees.map((x) => {
                                         if (x.name !== c.name) return x;
                                         const allowed = new Set(
@@ -520,13 +581,14 @@ export default function EventOverviewPage() {
                   const active = skills.includes(s);
                   return (
                     <button
+                      disabled={!isEditable}
                       key={s}
                       type="button"
                       onClick={() => {
                         if (active) setSkills(skills.filter((x) => x !== s));
                         else setSkills([...skills, s]);
                       }}
-                      className={`mr-2 mb-2 rounded-full px-3 py-1 text-sm border ${
+                      className={`mr-2 mb-2 rounded-full px-3 py-1 text-sm border disabled:opacity-60 disabled:pointer-events-none ${
                         active
                           ? "bg-brand-primary text-white border-brand-primary"
                           : "bg-white text-brand-text border-slate-200 hover:bg-slate-50"
@@ -545,12 +607,14 @@ export default function EventOverviewPage() {
                 </div>
                 <div className="mt-2 flex gap-2">
                   <input
+                    disabled={!isEditable}
                     value={customSkill}
                     onChange={(e) => setCustomSkill(e.target.value)}
-                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent"
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent disabled:opacity-60 disabled:bg-slate-50"
                     placeholder="e.g., Public Speaking"
                   />
                   <button
+                    disabled={!isEditable}
                     type="button"
                     onClick={() => {
                       const v = customSkill.trim();
@@ -585,10 +649,11 @@ export default function EventOverviewPage() {
                         {s}
                         <button
                           type="button"
+                          disabled={!isEditable}
                           onClick={() =>
                             setSkills(skills.filter((x) => x !== s))
                           }
-                          className="text-slate-400 hover:text-slate-700"
+                          className="text-slate-400 hover:text-slate-700 disabled:opacity-60 disabled:pointer-events-none"
                         >
                           ✕
                         </button>
@@ -663,8 +728,8 @@ export default function EventOverviewPage() {
                         e.target.value = "";
                       }
                     }}
-                    className="block w-full text-sm"
-                    disabled={uploading}
+                    className="block w-full text-sm disabled:opacity-60"
+                    disabled={!isEditable || uploading}
                   />
 
                   {uploading && (
@@ -686,10 +751,9 @@ export default function EventOverviewPage() {
               >
                 Reset
               </button>
-
               <button
                 onClick={onSave}
-                disabled={saving}
+                disabled={!isEditable || saving}
                 className="rounded-xl bg-brand-primary text-white font-medium px-5 py-2 hover:opacity-95 disabled:opacity-60"
               >
                 {saving ? "Saving..." : "Save Changes"}
@@ -705,7 +769,7 @@ export default function EventOverviewPage() {
 
           <button
             type="button"
-            disabled={publishing || isPublished || isClosed}
+            disabled={!isEditable || publishing || isPublished || isClosed}
             onClick={async () => {
               setPublishMsg(null);
               setPublishing(true);
