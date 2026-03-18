@@ -1,14 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Brand Colors ── */
-  --color-brand-primary: #1E40AF;
-  --color-brand-secondary: #4338CA;
-  --color-brand-bg: #F8FAFC;
-  --color-brand-surface: #FFFFFF;
+  /* ── Brand Colors (Beyond Grades palette) ── */
+  --color-brand-primary: #0EA5A4;
+  --color-brand-primary-dark: #0C8B8A;
+  --color-brand-secondary: #FACC15;
+  --color-brand-bg: #FFFFFF;
+  --color-brand-surface: #F7FAFA;
   --color-brand-text: #0F172A;
   --color-brand-muted: #475569;
-  --color-brand-accent: #0EA5E9;
+  --color-brand-accent: #0EA5A4;
+  --color-brand-stroke: #E2E8F0;
 
   /* ── Status Colors ── */
   --color-status-draft: #CBD5E1;
@@ -16,3 +18,31 @@
   --color-status-open: #16A34A;
   --color-status-closed: #DC2626;
 }
+
+/* ── Custom utility animations ── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out both;
+}
+
+.animation-delay-100 { animation-delay: 100ms; }
+.animation-delay-200 { animation-delay: 200ms; }
+.animation-delay-300 { animation-delay: 300ms; }
