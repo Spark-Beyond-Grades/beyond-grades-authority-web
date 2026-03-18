@@ -8,163 +8,74 @@ async function safeJson(res) {
   }
 }
 
-// ✅ already used by your login flow
-export async function authSync(idToken) {
-  const res = await fetch(`${API_BASE}/auth/sync`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${idToken}`,
-    },
-  });
+/**
+ * Central fetch wrapper — handles auth header, JSON parsing, and error throwing.
+ * All API functions delegate to this.
+ */
+async function apiFetch(path, { token, ...options } = {}) {
+  const headers = { ...options.headers };
+  if (token) headers.Authorization = `Bearer ${token}`;
 
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   const data = await safeJson(res);
 
   if (!res.ok) {
-    const msg = data?.message || "Auth sync failed";
-    const err = new Error(msg);
-    err.status = res.status;
-    throw err;
-  }
-
-  return data; // { ok: true, authority: {...} }
-}
-
-// ✅ TEST: create a draft event
-export async function createEvent(idToken, payload = {}) {
-  const res = await fetch(`${API_BASE}/events`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${idToken}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const data = await safeJson(res);
-
-  if (!res.ok) {
-    const err = new Error(data?.message || "Create event failed");
-    err.status = res.status;
-    throw err;
-  }
-
-  return data; // { ok: true, event: {...} } (or whatever your backend returns)
-}
-
-// ✅ TEST: fetch events list
-export async function getEvents(idToken) {
-  const res = await fetch(`${API_BASE}/events`, {
-    headers: {
-      Authorization: `Bearer ${idToken}`,
-    },
-  });
-
-  const data = await safeJson(res);
-
-  if (!res.ok) {
-    const err = new Error(data?.message || "Fetch events failed");
-    err.status = res.status;
-    throw err;
-  }
-
-  return data; // { ok: true, events: [...] }
-}
-
-export async function getEventById(idToken, eventId) {
-  const res = await fetch(`${API_BASE}/events/${eventId}`, {
-    headers: { Authorization: `Bearer ${idToken}` },
-  });
-
-  const data = await safeJson(res);
-  if (!res.ok) {
-    const err = new Error(data?.message || "Fetch event failed");
-    err.status = res.status;
-    throw err;
-  }
-  return data;
-}
-
-export async function updateEvent(idToken, eventId, payload) {
-  const res = await fetch(`${API_BASE}/events/${eventId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${idToken}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const data = await safeJson(res);
-  if (!res.ok) {
-    const err = new Error(data?.message || "Update event failed");
-    err.status = res.status;
-    throw err;
-  }
-  return data;
-}
-
-export async function uploadParticipantsCsv(idToken, eventId, file) {
-  const form = new FormData();
-  form.append("file", file);
-
-  const res = await fetch(`${API_BASE}/events/${eventId}/participants/upload`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${idToken}`,
-    },
-    body: form,
-  });
-
-  const data = await safeJson(res);
-  if (!res.ok) {
-    const err = new Error(data?.message || "Upload failed");
+    const err = new Error(data?.message || `Request failed (${res.status})`);
     err.status = res.status;
     err.details = data;
     throw err;
   }
-  return data; // { ok, inserted, total }
-}
 
-export async function getParticipants(idToken, eventId) {
-  const res = await fetch(`${API_BASE}/events/${eventId}/participants`, {
-    headers: { Authorization: `Bearer ${idToken}` },
-  });
-
-  const data = await safeJson(res);
-  if (!res.ok) {
-    const err = new Error(data?.message || "Fetch participants failed");
-    err.status = res.status;
-    throw err;
-  }
   return data;
 }
 
-export async function publishEvent(idToken, eventId) {
-  const res = await fetch(`${API_BASE}/events/${eventId}/publish`, {
+// ── Auth ────────────────────────────────────────────────────────────
+
+export const authSync = (token) =>
+  apiFetch("/auth/sync", { method: "POST", token });
+
+// ── Events ──────────────────────────────────────────────────────────
+
+export const getEvents = (token) =>
+  apiFetch("/events", { token });
+
+export const getEventById = (token, eventId) =>
+  apiFetch(`/events/${eventId}`, { token });
+
+export const createEvent = (token, payload) =>
+  apiFetch("/events", {
     method: "POST",
-    headers: { Authorization: `Bearer ${idToken}` },
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
 
-  const data = await safeJson(res);
-  if (!res.ok) {
-    const err = new Error(data?.message || "Publish failed");
-    err.status = res.status;
-    throw err;
-  }
-  return data;
-}
+export const updateEvent = (token, eventId, payload) =>
+  apiFetch(`/events/${eventId}`, {
+    method: "PUT",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 
-export async function closeEvent(idToken, eventId) {
-  const res = await fetch(`${API_BASE}/events/${eventId}/close`, {
+export const publishEvent = (token, eventId) =>
+  apiFetch(`/events/${eventId}/publish`, { method: "POST", token });
+
+export const closeEvent = (token, eventId) =>
+  apiFetch(`/events/${eventId}/close`, { method: "POST", token });
+
+// ── Participants ────────────────────────────────────────────────────
+
+export const getParticipants = (token, eventId) =>
+  apiFetch(`/events/${eventId}/participants`, { token });
+
+export async function uploadParticipantsCsv(token, eventId, file) {
+  const form = new FormData();
+  form.append("file", file);
+
+  return apiFetch(`/events/${eventId}/participants/upload`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${idToken}` },
+    token,
+    body: form,
   });
-
-  const data = await safeJson(res);
-  if (!res.ok) {
-    const err = new Error(data?.message || "Close failed");
-    err.status = res.status;
-    throw err;
-  }
-  return data;
 }

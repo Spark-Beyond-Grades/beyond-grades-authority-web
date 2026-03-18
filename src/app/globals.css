@@ -1,2 +1,18 @@
 @import "tailwindcss";
-@config "../../tailwind.config.js";
+
+@theme {
+  /* ── Brand Colors ── */
+  --color-brand-primary: #1E40AF;
+  --color-brand-secondary: #4338CA;
+  --color-brand-bg: #F8FAFC;
+  --color-brand-surface: #FFFFFF;
+  --color-brand-text: #0F172A;
+  --color-brand-muted: #475569;
+  --color-brand-accent: #0EA5E9;
+
+  /* ── Status Colors ── */
+  --color-status-draft: #CBD5E1;
+  --color-status-scheduled: #6366F1;
+  --color-status-open: #16A34A;
+  --color-status-closed: #DC2626;
+}
