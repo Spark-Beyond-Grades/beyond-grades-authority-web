@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
@@ -10,19 +11,14 @@ export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-brand-bg flex items-center justify-center">
-        <div className="text-sm text-brand-muted animate-pulse">Loading...</div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (loading) return;
+    router.replace(user ? "/dashboard" : "/login");
+  }, [user, loading, router]);
 
-  if (user) {
-    router.replace("/dashboard");
-  } else {
-    router.replace("/login");
-  }
-
-  return null;
+  return (
+    <div className="min-h-screen bg-brand-bg flex items-center justify-center">
+      <div className="text-sm text-brand-muted animate-pulse">Loading...</div>
+    </div>
+  );
 }
