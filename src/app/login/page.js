@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithMicrosoft } from "@/lib/authMicrosoft";
-import { authSync} from "@/lib/api";
+import { authSync } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,25 +15,22 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { user, idToken } = await signInWithMicrosoft();
+      const { idToken } = await signInWithMicrosoft();
 
-      // ✅ Backend gatekeeper check
+      // Backend gatekeeper check
       await authSync(idToken);
 
-      // ✅ store token for dashboard/api calls
-      localStorage.setItem("bg_id_token", idToken);
-
-      // redirect to dashboard
+      // Token is now managed by AuthProvider via onIdTokenChanged
       router.push("/dashboard");
     } catch (e) {
-      console.log("❌ Login/Auth error:", e?.message);
+      console.error("Login/Auth error:", e?.message);
 
       if (e?.status === 403) {
         router.push("/access-denied");
         return;
       }
 
-      setMsg(`❌ ${e?.message || "Login failed"}`);
+      setMsg(e?.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -41,24 +38,25 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-brand-bg flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl bg-brand-surface shadow-sm border border-slate-200 p-6">
+      <div className="w-full max-w-md rounded-2xl bg-brand-surface shadow-sm border border-slate-200 p-8">
         <h1 className="text-2xl font-semibold text-brand-text">
-          Beyond Grades — Authority Portal
+          Beyond Grades
         </h1>
-        <p className="text-sm text-brand-muted mt-1">
-          Sign in with Microsoft to continue.
+        <p className="text-base text-brand-muted mt-0.5">Authority Portal</p>
+        <p className="text-sm text-brand-muted mt-3">
+          Sign in with your Microsoft account to continue.
         </p>
 
         <button
           onClick={handleLogin}
           disabled={loading}
-          className="mt-6 w-full rounded-xl bg-brand-primary text-white font-medium py-3 hover:opacity-95 disabled:opacity-60"
+          className="mt-6 w-full rounded-xl bg-brand-primary text-white font-medium py-3 hover:opacity-95 disabled:opacity-60 transition-opacity"
         >
           {loading ? "Signing in..." : "Continue with Microsoft"}
         </button>
 
         {msg && (
-          <div className="mt-4 text-sm rounded-lg p-3 bg-slate-50 border border-slate-200 text-brand-text">
+          <div className="mt-4 text-sm rounded-lg p-3 bg-red-50 border border-red-200 text-red-700">
             {msg}
           </div>
         )}

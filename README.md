@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Beyond Grades — Authority Portal
+
+A **Next.js 16** web portal for authority users to manage feedback events, team structures, and participant reviews.
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Styling | Tailwind CSS 4 |
+| Auth | Firebase Auth (Microsoft OAuth) |
+| Backend | REST API at configured `NEXT_PUBLIC_API_BASE_URL` |
 
 ## Getting Started
 
-First, run the development server:
+### 1. Clone and install
+
+```bash
+git clone <your-repo-url>
+cd beyond-grades-authority-web
+npm install
+```
+
+### 2. Configure environment
+
+Create a `.env.local` file with:
+
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=your_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+
+NEXT_PUBLIC_API_BASE_URL=https://your-backend.example.com
+```
+
+### 3. Run the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/
+│   ├── layout.js              # Root layout with AuthProvider
+│   ├── page.js                # Root redirect (→ dashboard or login)
+│   ├── error.js               # Global error boundary
+│   ├── not-found.js           # 404 page
+│   ├── login/page.js          # Microsoft OAuth login
+│   ├── access-denied/page.js  # 403 page
+│   ├── dashboard/
+│   │   ├── page.js            # Events list + create
+│   │   └── loading.js         # Skeleton loader
+│   └── events/[id]/
+│       ├── page.js            # Event detail + editor
+│       ├── loading.js         # Skeleton loader
+│       └── published/page.js  # Post-publish confirmation
+├── components/
+│   ├── EventForm.js           # Event name/type/description/dates
+│   ├── Navbar.js              # Top nav with logout
+│   ├── ParticipantUploader.js # CSV upload
+│   ├── ProtectedRoute.js      # Auth guard wrapper
+│   ├── PublishBar.js          # Publish/close actions
+│   ├── SkillsPicker.js        # Skill selection
+│   ├── StatusChip.js          # Status badge (shared)
+│   └── TeamStructureEditor.js # Levels + committees + mapping
+├── context/
+│   └── AuthContext.js         # Firebase auth state + token refresh
+└── lib/
+    ├── api.js                 # REST API client (centralized)
+    ├── authMicrosoft.js       # Microsoft OAuth popup
+    └── firebase.js            # Firebase app init
+```
 
-## Learn More
+## Auth Flow
 
-To learn more about Next.js, take a look at the following resources:
+1. User clicks **"Continue with Microsoft"** on `/login`
+2. Firebase handles Microsoft OAuth popup → returns ID token
+3. Token sent to backend `/auth/sync` for allowlist check
+4. `AuthProvider` manages token state and auto-refreshes before expiry
+5. Protected routes redirect to `/login` if unauthenticated
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Available Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Command | Description |
+|---|---|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |

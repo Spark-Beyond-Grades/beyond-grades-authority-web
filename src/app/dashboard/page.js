@@ -1,44 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { getEvents, createEvent } from "@/lib/api";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import Navbar from "@/components/Navbar";
+import StatusChip from "@/components/StatusChip";
 
-function StatusChip({ status }) {
-  const map = {
-    DRAFT: "bg-white border border-slate-200 text-slate-700",
-    SCHEDULED: "bg-status-scheduled text-white",
-    OPEN: "bg-status-open text-white",
-    CLOSED: "bg-status-closed text-white",
-  };
-
-  return (
-    <span
-      className={`px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center ${
-        map[status] || "bg-slate-200 text-slate-700"
-      }`}
-    >
-      {status}
-    </span>
-  );
-}
-
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
+  const { getToken } = useAuth();
+
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [events, setEvents] = useState([]);
   const [error, setError] = useState(null);
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     setError(null);
     setLoading(true);
     try {
-      const token = localStorage.getItem("bg_id_token");
-      if (!token) {
-        router.push("/login");
-        return;
-      }
+      const token = await getToken();
       const data = await getEvents(token);
       setEvents(data.events || []);
     } catch (e) {
@@ -46,24 +29,17 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken]);
 
   useEffect(() => {
     loadEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadEvents]);
 
   const handleCreate = async () => {
     setCreating(true);
     setError(null);
     try {
-      const token = localStorage.getItem("bg_id_token");
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-
-      // minimal draft event
+      const token = await getToken();
       const data = await createEvent(token, {
         name: "Untitled Event",
         type: "OTHER",
@@ -80,8 +56,9 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-brand-bg p-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-brand-bg">
+      <Navbar />
+      <div className="max-w-5xl mx-auto p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-brand-text">Events</h1>
@@ -94,7 +71,7 @@ export default function DashboardPage() {
             <button
               onClick={loadEvents}
               disabled={loading}
-              className="rounded-xl border border-slate-200 bg-white text-brand-text font-medium px-4 py-2 hover:bg-slate-50 disabled:opacity-60"
+              className="rounded-xl border border-slate-200 bg-white text-brand-text font-medium px-4 py-2 hover:bg-slate-50 disabled:opacity-60 transition-colors"
             >
               {loading ? "Refreshing..." : "Refresh"}
             </button>
@@ -102,7 +79,7 @@ export default function DashboardPage() {
             <button
               onClick={handleCreate}
               disabled={creating}
-              className="rounded-xl bg-brand-primary text-white font-medium px-4 py-2 hover:opacity-95 disabled:opacity-60"
+              className="rounded-xl bg-brand-primary text-white font-medium px-4 py-2 hover:opacity-95 disabled:opacity-60 transition-opacity"
             >
               {creating ? "Creating..." : "Create New Event"}
             </button>
@@ -117,9 +94,24 @@ export default function DashboardPage() {
 
         <div className="mt-6">
           {loading ? (
-            <div className="text-brand-muted text-sm">Loading events...</div>
+            <div className="grid gap-4">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="rounded-2xl bg-brand-surface border border-slate-200 p-5"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="h-5 w-48 rounded-lg bg-slate-200 animate-pulse" />
+                      <div className="h-4 w-72 rounded-lg bg-slate-100 animate-pulse mt-2" />
+                    </div>
+                    <div className="h-6 w-20 rounded-full bg-slate-200 animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : events.length === 0 ? (
-            <div className="rounded-2xl bg-brand-surface border border-slate-200 p-6">
+            <div className="rounded-2xl bg-brand-surface border border-slate-200 p-6 text-center">
               <h2 className="text-lg font-semibold text-brand-text">
                 No events yet
               </h2>
@@ -127,27 +119,16 @@ export default function DashboardPage() {
                 Create your first event to start collecting feedback.
               </p>
               <p className="text-xs text-brand-muted mt-2">
-                Tip: Start with a draft — you can add dates & participants
+                Tip: Start with a draft — you can add dates &amp; participants
                 later.
               </p>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={loadEvents}
-                  disabled={loading}
-                  className="rounded-xl border border-slate-200 bg-white text-brand-text font-medium px-4 py-2 hover:bg-slate-50 disabled:opacity-60"
-                >
-                  {loading ? "Refreshing..." : "Refresh"}
-                </button>
-
-                <button
-                  onClick={handleCreate}
-                  disabled={creating}
-                  className="rounded-xl bg-brand-primary text-white font-medium px-4 py-2 hover:opacity-95 disabled:opacity-60"
-                >
-                  {creating ? "Creating..." : "Create New Event"}
-                </button>
-              </div>
+              <button
+                onClick={handleCreate}
+                disabled={creating}
+                className="mt-4 rounded-xl bg-brand-primary text-white font-medium px-4 py-2 hover:opacity-95 disabled:opacity-60 transition-opacity"
+              >
+                {creating ? "Creating..." : "Create New Event"}
+              </button>
             </div>
           ) : (
             <div className="grid gap-4">
@@ -155,7 +136,7 @@ export default function DashboardPage() {
                 <button
                   key={ev._id}
                   onClick={() => router.push(`/events/${ev._id}`)}
-                  className="text-left rounded-2xl bg-brand-surface border border-slate-200 p-5 hover:shadow-sm transition"
+                  className="text-left rounded-2xl bg-brand-surface border border-slate-200 p-5 hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div>
@@ -164,7 +145,9 @@ export default function DashboardPage() {
                       </div>
                       <div className="text-sm text-brand-muted mt-1">
                         Open:{" "}
-                        {ev.openAt ? new Date(ev.openAt).toLocaleString() : "—"}{" "}
+                        {ev.openAt
+                          ? new Date(ev.openAt).toLocaleString()
+                          : "—"}{" "}
                         • Close:{" "}
                         {ev.closeAtTentative
                           ? new Date(ev.closeAtTentative).toLocaleString()
@@ -180,5 +163,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
   );
 }
