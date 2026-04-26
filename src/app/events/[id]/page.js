@@ -9,6 +9,7 @@ import {
   publishEvent,
   getParticipants,
   closeEvent,
+  uploadEventPoster,
 } from "@/lib/api";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -32,10 +33,13 @@ function EventContent() {
 
   // Form state
   const [name, setName] = useState("");
-  const [type, setType] = useState("OTHER");
+  const [eventDate, setEventDate] = useState("");
+  const [venue, setVenue] = useState("");
   const [description, setDescription] = useState("");
   const [openAt, setOpenAt] = useState("");
   const [closeAtTentative, setCloseAtTentative] = useState("");
+  const [poster, setPoster] = useState(null);
+  const [posterUrl, setPosterUrl] = useState(null);
 
   // Team structure
   const [levels, setLevels] = useState([]);
@@ -69,7 +73,8 @@ function EventContent() {
 
       // Populate form
       setName(ev?.name || "");
-      setType(ev?.type || "OTHER");
+      setEventDate(ev?.eventDate ? new Date(ev.eventDate).toISOString().slice(0, 10) : "");
+      setVenue(ev?.venue || "");
       setDescription(ev?.description || "");
       setOpenAt(
         ev?.openAt ? new Date(ev.openAt).toISOString().slice(0, 16) : ""
@@ -79,6 +84,8 @@ function EventContent() {
           ? new Date(ev.closeAtTentative).toISOString().slice(0, 16)
           : ""
       );
+      setPosterUrl(ev?.posterUrl || null);
+      setPoster(null);
       setLevels(ev?.levels || []);
       setCommittees(ev?.committees || []);
       setSkills(ev?.skills || []);
@@ -96,7 +103,8 @@ function EventContent() {
   /** Build the payload from current form state. */
   const buildPayload = () => ({
     name,
-    type,
+    eventDate: eventDate ? new Date(eventDate).toISOString() : null,
+    venue,
     description,
     openAt: openAt ? new Date(openAt).toISOString() : null,
     closeAtTentative: closeAtTentative
@@ -105,6 +113,7 @@ function EventContent() {
     levels,
     committees,
     skills,
+    posterUrl,
   });
 
   const handleSave = async () => {
@@ -112,7 +121,23 @@ function EventContent() {
     setSaving(true);
     try {
       const token = await getToken();
-      const data = await updateEvent(token, id, buildPayload());
+
+      let currentPosterUrl = posterUrl;
+
+      // 1. Upload poster if selected
+      if (poster) {
+        const uploadData = await uploadEventPoster(token, id, poster);
+        currentPosterUrl = uploadData.posterUrl;
+        setPosterUrl(currentPosterUrl);
+        setPoster(null);
+      }
+
+      // 2. Save other fields
+      const payload = {
+        ...buildPayload(),
+        posterUrl: currentPosterUrl,
+      };
+      const data = await updateEvent(token, id, payload);
       setEvent(data.event);
     } catch (e) {
       setError(e.message || "Failed to save");
@@ -120,11 +145,25 @@ function EventContent() {
       setSaving(false);
     }
   };
-
   const handlePublish = async () => {
     const token = await getToken();
+
+    let currentPosterUrl = posterUrl;
+
+    // 1. Upload poster if selected before publishing
+    if (poster) {
+      const uploadData = await uploadEventPoster(token, id, poster);
+      currentPosterUrl = uploadData.posterUrl;
+      setPosterUrl(currentPosterUrl);
+      setPoster(null);
+    }
+
     // Save latest values first
-    await updateEvent(token, id, buildPayload());
+    const payload = {
+      ...buildPayload(),
+      posterUrl: currentPosterUrl,
+    };
+    await updateEvent(token, id, payload);
     // Then publish
     const data = await publishEvent(token, id);
     setEvent(data.event);
@@ -134,6 +173,7 @@ function EventContent() {
     setEvent(refreshed.event);
     const p = await getParticipants(token, id);
     setParticipantsCount((p.participants || []).length);
+
     router.push(`/events/${id}/published`);
   };
 
@@ -238,14 +278,19 @@ function EventContent() {
             <EventForm
               name={name}
               setName={setName}
-              type={type}
-              setType={setType}
+              eventDate={eventDate}
+              setEventDate={setEventDate}
+              venue={venue}
+              setVenue={setVenue}
               description={description}
               setDescription={setDescription}
               openAt={openAt}
               setOpenAt={setOpenAt}
               closeAtTentative={closeAtTentative}
               setCloseAtTentative={setCloseAtTentative}
+              poster={poster}
+              setPoster={setPoster}
+              posterUrl={posterUrl}
               isEditable={isEditable}
             />
 

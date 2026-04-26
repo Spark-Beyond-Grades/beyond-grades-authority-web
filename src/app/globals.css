@@ -212,3 +212,219 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(14, 165, 164, 0.35);
 }
+
+/* ══════════════════════════════════════════ */
+/* ── Plan Selection Modal Styles ── */
+/* ══════════════════════════════════════════ */
+
+/* Overlay */
+.plan-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem 2rem;
+  overflow-y: auto;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: fade-in-up 0.25s ease-out both;
+}
+
+/* Modal Container */
+.plan-modal {
+  position: relative;
+  width: 100%;
+  max-width: 1060px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.75rem;
+  padding: 2.5rem 2rem 2rem;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.08),
+    0 24px 64px rgba(15, 23, 42, 0.14);
+}
+
+/* Close Button */
+.plan-close-btn {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.625rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.plan-close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.plan-close-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Plans Grid */
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+@media (min-width: 640px) {
+  .plan-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+  .plan-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Plan Card */
+.plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.22s ease,
+              border-color 0.22s ease;
+}
+.plan-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(14, 165, 164, 0.1);
+  border-color: #cbd5e1;
+}
+
+/* Popular card — slightly elevated */
+.plan-card-popular {
+  border-color: #0EA5A4;
+  padding-top: 2.75rem;
+  box-shadow: 0 4px 20px rgba(14, 165, 164, 0.12);
+}
+.plan-card-popular:hover {
+  box-shadow: 0 10px 36px rgba(14, 165, 164, 0.18);
+  border-color: #0EA5A4;
+}
+
+/* Popular ribbon */
+.plan-popular-ribbon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 0.45rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(90deg, #0EA5A4, #0C8B8A);
+  border-radius: 1.15rem 1.15rem 0 0;
+}
+
+/* Locked / Coming Soon card */
+.plan-card-locked {
+  opacity: 0.6;
+  filter: grayscale(40%);
+  position: relative;
+}
+.plan-card-locked:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #e2e8f0;
+}
+
+/* Coming Soon overlay */
+.plan-coming-soon-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(248, 250, 252, 0.75);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  border-radius: 1.25rem;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════ */
+/* ── Venue Combobox Dropdown Styles ── */
+/* ══════════════════════════════════════════ */
+
+.venue-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.875rem;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.06),
+    0 12px 32px rgba(14, 165, 164, 0.08);
+  overflow: hidden;
+  animation: fade-in-up 0.15s ease-out both;
+}
+
+.venue-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.6rem 0.875rem;
+  font-size: 0.8125rem;
+  color: #334155;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  text-align: left;
+}
+.venue-option:hover {
+  background: #f0fdfa;
+  color: #0F172A;
+}
+.venue-option-active {
+  background: rgba(14, 165, 164, 0.06);
+  color: #0EA5A4;
+  font-weight: 500;
+}
+.venue-option-custom {
+  color: #0EA5A4;
+  font-weight: 500;
+  font-size: 0.8125rem;
+}
+.venue-option-custom:hover {
+  background: rgba(14, 165, 164, 0.06);
+}
+
+.venue-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 0.25rem 0;
+}
+
+.venue-section-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+  padding: 0.5rem 0.875rem 0.25rem;
+}

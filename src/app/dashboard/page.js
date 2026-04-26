@@ -7,6 +7,7 @@ import { getEvents, createEvent } from "@/lib/api";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Navbar from "@/components/Navbar";
 import StatusChip from "@/components/StatusChip";
+import PlanSelection from "@/components/PlanSelection";
 
 /* ─── SVG Icons (inline, no deps) ─── */
 const CalendarIcon = () => (
@@ -27,6 +28,12 @@ const RefreshIcon = ({ spinning }) => (
 const ArrowRightIcon = () => (
   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+  </svg>
+);
+const LocationIcon = () => (
+  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
   </svg>
 );
 const SparkleIcon = () => (
@@ -125,16 +132,30 @@ function EventCard({ event, onClick, delay }) {
             </span>
           )}
 
-          {/* Date info */}
+          {/* Event Date + Venue */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-brand-muted mt-1">
-            <span className="inline-flex items-center gap-1">
-              <CalendarIcon />
-              Open: {formatDate(event.openAt)}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <CalendarIcon />
-              Close: {formatDate(event.closeAtTentative)}
-            </span>
+            {event.eventDate ? (
+              <span className="inline-flex items-center gap-1">
+                <CalendarIcon />
+                {formatDate(event.eventDate)}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-brand-muted/50">
+                <CalendarIcon />
+                No date set
+              </span>
+            )}
+            {event.venue ? (
+              <span className="inline-flex items-center gap-1">
+                <LocationIcon />
+                {event.venue}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-brand-muted/50">
+                <LocationIcon />
+                No venue set
+              </span>
+            )}
           </div>
         </div>
 
@@ -158,6 +179,7 @@ function DashboardContent() {
   const [creating, setCreating] = useState(false);
   const [events, setEvents] = useState([]);
   const [error, setError] = useState(null);
+  const [showPlanSelection, setShowPlanSelection] = useState(false);
 
   const loadEvents = useCallback(async () => {
     setError(null);
@@ -177,7 +199,13 @@ function DashboardContent() {
     loadEvents();
   }, [loadEvents]);
 
-  const handleCreate = async () => {
+  // Open plan selection modal
+  const handleCreate = () => {
+    setShowPlanSelection(true);
+  };
+
+  // Called after user picks a plan
+  const handlePlanConfirm = async (planId) => {
     setCreating(true);
     setError(null);
     try {
@@ -185,8 +213,10 @@ function DashboardContent() {
       const data = await createEvent(token, {
         name: "Untitled Event",
         type: "OTHER",
+        plan: planId,
       });
       const eventId = data?.event?._id;
+      setShowPlanSelection(false);
       if (eventId) router.push(`/events/${eventId}`);
       else await loadEvents();
     } catch (e) {
@@ -221,6 +251,15 @@ function DashboardContent() {
   return (
     <div className="bg-mesh">
       <Navbar />
+
+      {/* ── Plan Selection Modal ── */}
+      {showPlanSelection && (
+        <PlanSelection
+          onClose={() => setShowPlanSelection(false)}
+          onConfirm={handlePlanConfirm}
+          creating={creating}
+        />
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* ─── Hero Header ─── */}
