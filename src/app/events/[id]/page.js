@@ -40,6 +40,8 @@ function EventContent() {
   const [closeAtTentative, setCloseAtTentative] = useState("");
   const [poster, setPoster] = useState(null);
   const [posterUrl, setPosterUrl] = useState(null);
+  const [logo, setLogo] = useState(null);
+  const [logoUrl, setLogoUrl] = useState(null);
 
   // Team structure
   const [levels, setLevels] = useState([]);
@@ -86,6 +88,8 @@ function EventContent() {
       );
       setPosterUrl(ev?.posterUrl || null);
       setPoster(null);
+      setLogoUrl(ev?.logoUrl || null);
+      setLogo(null);
       setLevels(ev?.levels || []);
       setCommittees(ev?.committees || []);
       setSkills(ev?.skills || []);
@@ -114,6 +118,7 @@ function EventContent() {
     committees,
     skills,
     posterUrl,
+    logoUrl,
   });
 
   const handleSave = async () => {
@@ -132,10 +137,21 @@ function EventContent() {
         setPoster(null);
       }
 
-      // 2. Save other fields
+      let currentLogoUrl = logoUrl;
+      // 2. Upload logo if selected
+      if (logo) {
+        const { uploadEventLogo } = await import("@/lib/api");
+        const uploadData = await uploadEventLogo(token, id, logo);
+        currentLogoUrl = uploadData.logoUrl;
+        setLogoUrl(currentLogoUrl);
+        setLogo(null);
+      }
+
+      // 3. Save other fields
       const payload = {
         ...buildPayload(),
         posterUrl: currentPosterUrl,
+        logoUrl: currentLogoUrl,
       };
       const data = await updateEvent(token, id, payload);
       setEvent(data.event);
@@ -158,10 +174,21 @@ function EventContent() {
       setPoster(null);
     }
 
+    let currentLogoUrl = logoUrl;
+    // 2. Upload logo if selected
+    if (logo) {
+      const { uploadEventLogo } = await import("@/lib/api");
+      const uploadData = await uploadEventLogo(token, id, logo);
+      currentLogoUrl = uploadData.logoUrl;
+      setLogoUrl(currentLogoUrl);
+      setLogo(null);
+    }
+
     // Save latest values first
     const payload = {
       ...buildPayload(),
       posterUrl: currentPosterUrl,
+      logoUrl: currentLogoUrl,
     };
     await updateEvent(token, id, payload);
     // Then publish
@@ -291,6 +318,9 @@ function EventContent() {
               poster={poster}
               setPoster={setPoster}
               posterUrl={posterUrl}
+              logo={logo}
+              setLogo={setLogo}
+              logoUrl={logoUrl}
               isEditable={isEditable}
             />
 
