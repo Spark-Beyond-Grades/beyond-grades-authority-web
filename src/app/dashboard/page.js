@@ -125,12 +125,7 @@ function EventCard({ event, onClick, delay }) {
             </h3>
           </div>
 
-          {/* Type badge */}
-          {event.type && (
-            <span className="inline-block text-[10px] font-semibold uppercase tracking-wider text-brand-muted/70 bg-brand-primary/5 px-2 py-0.5 rounded-md mb-2">
-              {event.type}
-            </span>
-          )}
+
 
           {/* Event Date + Venue */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-brand-muted mt-1">

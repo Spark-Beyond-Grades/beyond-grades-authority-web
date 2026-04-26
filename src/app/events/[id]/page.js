@@ -33,7 +33,8 @@ function EventContent() {
 
   // Form state
   const [name, setName] = useState("");
-  const [eventDate, setEventDate] = useState("");
+  const [eventStartDate, setEventStartDate] = useState("");
+  const [eventEndDate, setEventEndDate] = useState("");
   const [venue, setVenue] = useState("");
   const [description, setDescription] = useState("");
   const [openAt, setOpenAt] = useState("");
@@ -75,7 +76,8 @@ function EventContent() {
 
       // Populate form
       setName(ev?.name || "");
-      setEventDate(ev?.eventDate ? new Date(ev.eventDate).toISOString().slice(0, 10) : "");
+      setEventStartDate(ev?.eventStartDate ? new Date(ev.eventStartDate).toISOString().slice(0, 16) : "");
+      setEventEndDate(ev?.eventEndDate ? new Date(ev.eventEndDate).toISOString().slice(0, 16) : "");
       setVenue(ev?.venue || "");
       setDescription(ev?.description || "");
       setOpenAt(
@@ -107,7 +109,8 @@ function EventContent() {
   /** Build the payload from current form state. */
   const buildPayload = () => ({
     name,
-    eventDate: eventDate ? new Date(eventDate).toISOString() : null,
+    eventStartDate: eventStartDate ? new Date(eventStartDate).toISOString() : null,
+    eventEndDate: eventEndDate ? new Date(eventEndDate).toISOString() : null,
     venue,
     description,
     openAt: openAt ? new Date(openAt).toISOString() : null,
@@ -305,8 +308,10 @@ function EventContent() {
             <EventForm
               name={name}
               setName={setName}
-              eventDate={eventDate}
-              setEventDate={setEventDate}
+              eventStartDate={eventStartDate}
+              setEventStartDate={setEventStartDate}
+              eventEndDate={eventEndDate}
+              setEventEndDate={setEventEndDate}
               venue={venue}
               setVenue={setVenue}
               description={description}
@@ -330,6 +335,7 @@ function EventContent() {
               committees={committees}
               setCommittees={setCommittees}
               isEditable={isEditable}
+              getToken={getToken}
             />
 
             <SkillsPicker

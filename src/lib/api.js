@@ -105,4 +105,7 @@ export async function uploadParticipantsCsv(token, eventId, file) {
 // ── Feedback ────────────────────────────────────────────────────────
 
 export const getFeedbackSummary = (token) =>
-  apiFetch("/events/feedback-summary", { token });
+  apiFetch("/events/feedback-summary", { token });
+
+export const getSuggestions = (token) =>
+  apiFetch("/events/suggestions", { token });

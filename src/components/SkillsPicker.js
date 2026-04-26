@@ -54,11 +54,10 @@ export default function SkillsPicker({ skills, setSkills, isEditable }) {
                 key={s}
                 type="button"
                 onClick={() => toggleSkill(s)}
-                className={`mr-2 mb-2 rounded-full px-3 py-1 text-sm border disabled:opacity-60 disabled:pointer-events-none transition-colors ${
-                  active
+                className={`mr-2 mb-2 rounded-full px-3 py-1 text-sm border disabled:opacity-60 disabled:pointer-events-none transition-colors ${active
                     ? "bg-brand-primary text-white border-brand-primary"
                     : "bg-white text-brand-text border-slate-200 hover:bg-slate-50"
-                }`}
+                  }`}
               >
                 {s}
               </button>

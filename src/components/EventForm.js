@@ -156,15 +156,27 @@ export default function EventForm({
               />
             </div>
 
-            {/* Event Timing Row - Directly Below Name */}
+            {/* Event Timing Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-brand-text">Event Start (Date & Time)</label>
-                <input disabled={!isEditable} type="datetime-local" value={eventStartDate || ""} onChange={(e) => setEventStartDate(e.target.value)} className={inputClass} />
+                <input
+                  disabled={!isEditable}
+                  type="datetime-local"
+                  value={eventStartDate || ""}
+                  onChange={(e) => setEventStartDate(e.target.value)}
+                  className={inputClass}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-brand-text">Event End (Date & Time)</label>
-                <input disabled={!isEditable} type="datetime-local" value={eventEndDate || ""} onChange={(e) => setEventEndDate(e.target.value)} className={inputClass} />
+                <input
+                  disabled={!isEditable}
+                  type="datetime-local"
+                  value={eventEndDate || ""}
+                  onChange={(e) => setEventEndDate(e.target.value)}
+                  className={inputClass}
+                />
               </div>
             </div>
 
