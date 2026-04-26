@@ -1,4 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { getSuggestions } from "@/lib/api";
+
+const toTitleCase = (str) => {
+  if (!str) return "";
+  return str.replace(/\w\S*/g, (txt) => {
+    // If word is all uppercase and > 1 char (like IET), keep it
+    if (txt.length > 1 && txt === txt.toUpperCase()) return txt;
+    return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+  });
+};
 
 /**
  * Core event form fields: name, poster, description, event start/end date, venue.
@@ -25,6 +35,7 @@ export default function EventForm({
   setLogo,
   logoUrl,
   isEditable,
+  getToken,
 }) {
   const inputClass =
     "mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent disabled:opacity-60 disabled:bg-slate-50 transition-shadow";
@@ -183,7 +194,26 @@ export default function EventForm({
             {/* Venue */}
             <div>
               <label className="text-sm font-medium text-brand-text">Venue</label>
-              <input disabled={!isEditable} value={venue || ""} onChange={(e) => setVenue(e.target.value)} className={inputClass} placeholder="e.g., Auditorium, Block B" />
+              <div className="relative mt-2">
+                <input
+                  disabled={!isEditable}
+                  value={venue || ""}
+                  onChange={(e) => setVenue(e.target.value)}
+                  className={inputClass + " pr-10 mt-0"}
+                  placeholder="e.g., Auditorium, Block B"
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  onClick={() => window.open(`https://www.google.com/maps/search/${encodeURIComponent(venue || "JK Lakshmipat University")}`, "_blank")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-primary hover:scale-110 transition-transform"
+                  title="Search on Google Maps"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {/* Description (Now on the side of the poster) */}

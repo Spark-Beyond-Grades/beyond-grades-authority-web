@@ -117,43 +117,60 @@ function EventCard({ event, onClick, delay }) {
         group cursor-pointer
       `}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-base font-semibold text-brand-text truncate group-hover:text-brand-primary transition-colors">
-              {event.name || "Untitled Event"}
-            </h3>
+      <div className="flex items-center justify-between gap-4">
+        {/* Left Section: Logo + Info */}
+        <div className="flex items-center gap-4 min-w-0">
+          {/* Event Logo */}
+          <div className="shrink-0">
+            {event.logoUrl ? (
+              <img
+                src={event.logoUrl}
+                alt={event.name}
+                className="w-12 h-12 rounded-xl object-cover border border-brand-primary/10 bg-white"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-primary/10 to-brand-secondary/10 flex items-center justify-center text-brand-primary/40 font-bold text-lg">
+                {event.name ? event.name.charAt(0).toUpperCase() : "?"}
+              </div>
+            )}
           </div>
 
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <h3 className="text-base font-semibold text-brand-text truncate group-hover:text-brand-primary transition-colors">
+                {event.name || "Untitled Event"}
+              </h3>
+            </div>
 
-
-          {/* Event Date + Venue */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-brand-muted mt-1">
-            {event.eventDate ? (
-              <span className="inline-flex items-center gap-1">
-                <CalendarIcon />
-                {formatDate(event.eventDate)}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-brand-muted/50">
-                <CalendarIcon />
-                No date set
-              </span>
-            )}
-            {event.venue ? (
-              <span className="inline-flex items-center gap-1">
-                <LocationIcon />
-                {event.venue}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-brand-muted/50">
-                <LocationIcon />
-                No venue set
-              </span>
-            )}
+            {/* Event Date + Venue */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-brand-muted mt-1">
+              {event.eventDate ? (
+                <span className="inline-flex items-center gap-1">
+                  <CalendarIcon />
+                  {formatDate(event.eventDate)}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-brand-muted/50">
+                  <CalendarIcon />
+                  No date set
+                </span>
+              )}
+              {event.venue ? (
+                <span className="inline-flex items-center gap-1">
+                  <LocationIcon />
+                  {event.venue}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-brand-muted/50">
+                  <LocationIcon />
+                  No venue set
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
+        {/* Right Section: Status */}
         <div className="flex flex-col items-end gap-2 shrink-0">
           <StatusChip status={event.effectiveStatus} />
           <span className="text-brand-primary opacity-0 group-hover:opacity-100 transition-opacity duration-200">

@@ -100,11 +100,10 @@ export default function ParticipantUploader({
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
-          className={`relative rounded-xl border-2 border-dashed transition-all duration-200 ${
-            dragActive
-              ? "border-blue-500 bg-blue-50"
-              : "border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400"
-          } ${!isEditable || uploading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+          className={`relative rounded-xl border-2 border-dashed transition-all duration-200 ${dragActive
+            ? "border-blue-500 bg-blue-50"
+            : "border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400"
+            } ${!isEditable || uploading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
         >
           <input
             ref={fileInputRef}
@@ -143,11 +142,10 @@ export default function ParticipantUploader({
 
         {/* Upload Message */}
         {uploadMsg && (
-          <div className={`rounded-lg p-4 text-sm font-medium border ${
-            uploadMsg.startsWith("✅")
-              ? "bg-green-50 border-green-200 text-green-800"
-              : "bg-red-50 border-red-200 text-red-800"
-          }`}>
+          <div className={`rounded-lg p-4 text-sm font-medium border ${uploadMsg.startsWith("✅")
+            ? "bg-green-50 border-green-200 text-green-800"
+            : "bg-red-50 border-red-200 text-red-800"
+            }`}>
             {uploadMsg}
           </div>
         )}

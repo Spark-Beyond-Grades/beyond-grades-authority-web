@@ -25,7 +25,7 @@ export default function TeamStructureEditor({
 }) {
   const [newLevel, setNewLevel] = useState("");
   const [newCommittee, setNewCommittee] = useState("");
-  
+
   const [levelOpen, setLevelOpen] = useState(false);
   const [committeeOpen, setCommitteeOpen] = useState(false);
   const [levelIdx, setLevelIdx] = useState(-1);
@@ -114,18 +114,27 @@ export default function TeamStructureEditor({
       const results = dbList.length > 0 ? dbList.slice(0, 10) : defaultList.slice(0, 5);
       return Array.from(new Set(results.map(toTitleCase)));
     }
-    
-    const q = query.toLowerCase();
-    const starts = dbList.filter(x => x.toLowerCase().startsWith(q)).slice(0, 5);
-    const contains = dbList.filter(x => x.toLowerCase().includes(q) && !x.toLowerCase().startsWith(q));
-    
-    const combinedDb = [...starts, ...contains];
-    const combinedDbLower = combinedDb.map(x => x.toLowerCase());
-    const matchedDefaults = defaultList.filter(x => 
-      x.toLowerCase().includes(q) && !combinedDbLower.includes(x.toLowerCase())
-    );
 
-    const finalResults = [...starts, ...contains, ...matchedDefaults].slice(0, 15);
+    const q = query.toLowerCase();
+    const allItems = Array.from(new Set([...dbList, ...defaultList]));
+
+    // Tier 1: Starts with
+    const starts = allItems.filter(x => x.toLowerCase().startsWith(q));
+    // Tier 2: Includes full query
+    const contains = allItems.filter(x => x.toLowerCase().includes(q) && !x.toLowerCase().startsWith(q));
+
+    // Tier 3: Relative/Fuzzy (Substrings for typos)
+    let relative = [];
+    if (q.length >= 3) {
+      const sub = q.slice(1); // Handle typo at start like "hech" -> "ech"
+      const sub2 = q.slice(0, -1); // Handle typo at end
+      relative = allItems.filter(x =>
+        (x.toLowerCase().includes(sub) || x.toLowerCase().includes(sub2)) &&
+        !starts.includes(x) && !contains.includes(x)
+      );
+    }
+
+    const finalResults = [...starts, ...contains, ...relative].slice(0, 15);
     return Array.from(new Set(finalResults.map(toTitleCase)));
   }, []);
 
@@ -197,9 +206,8 @@ export default function TeamStructureEditor({
                       setLevelOpen(false);
                       setLevelIdx(-1);
                     }}
-                    className={`w-full text-left px-3 py-2 text-sm text-brand-text transition-colors ${
-                      levelIdx === i ? "bg-brand-accent text-brand-primary" : "hover:bg-slate-50"
-                    }`}
+                    className={`w-full text-left px-3 py-2 text-sm text-brand-text transition-colors ${levelIdx === i ? "bg-brand-accent text-brand-primary" : "hover:bg-slate-50"
+                      }`}
                   >
                     {l}
                   </button>
@@ -299,9 +307,8 @@ export default function TeamStructureEditor({
                       setCommitteeOpen(false);
                       setCommitteeIdx(-1);
                     }}
-                    className={`w-full text-left px-3 py-2 text-sm text-brand-text transition-colors ${
-                      committeeIdx === i ? "bg-brand-accent text-brand-primary" : "hover:bg-slate-50"
-                    }`}
+                    className={`w-full text-left px-3 py-2 text-sm text-brand-text transition-colors ${committeeIdx === i ? "bg-brand-accent text-brand-primary" : "hover:bg-slate-50"
+                      }`}
                   >
                     {c}
                   </button>
