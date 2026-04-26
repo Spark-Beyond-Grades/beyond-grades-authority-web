@@ -14,13 +14,17 @@ export default function PublishBar({
   onClose,
 }) {
   const [publishMsg, setPublishMsg] = useState(null);
+  const [publishing, setPublishing] = useState(false);
 
   const handlePublish = async () => {
     setPublishMsg(null);
+    setPublishing(true);
     try {
       await onPublish();
     } catch (e) {
       setPublishMsg(`❌ ${e.message || "Publish failed"}`);
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -33,15 +37,17 @@ export default function PublishBar({
 
         <button
           type="button"
-          disabled={!isEditable || isPublished || isClosed}
+          disabled={!isEditable || isPublished || isClosed || publishing}
           onClick={handlePublish}
           className="rounded-xl bg-brand-secondary text-white font-medium px-5 py-2 hover:opacity-95 disabled:opacity-60 transition-opacity"
         >
-          {isClosed
-            ? "Closed"
-            : isPublished
-            ? "Published"
-            : "Publish Event"}
+          {publishing
+            ? "Publishing..."
+            : isClosed
+              ? "Closed"
+              : isPublished
+                ? "Published"
+                : "Publish Event"}
         </button>
       </div>
 

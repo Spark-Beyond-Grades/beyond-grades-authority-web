@@ -64,6 +64,17 @@ export const publishEvent = (token, eventId) =>
 export const closeEvent = (token, eventId) =>
   apiFetch(`/events/${eventId}/close`, { method: "POST", token });
 
+export async function uploadEventPoster(token, eventId, file) {
+  const form = new FormData();
+  form.append("poster", file);
+
+  return apiFetch(`/events/${eventId}/poster`, {
+    method: "POST",
+    token,
+    body: form,
+  });
+}
+
 // ── Participants ────────────────────────────────────────────────────
 
 export const getParticipants = (token, eventId) =>
