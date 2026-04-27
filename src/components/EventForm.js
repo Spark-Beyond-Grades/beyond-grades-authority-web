@@ -39,7 +39,7 @@ export default function EventForm({
   universityName,
 }) {
   const inputClass =
-    "mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent disabled:opacity-60 disabled:bg-slate-50 transition-shadow";
+    "mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-brand-text outline-none focus:bg-white focus:ring-2 focus:ring-brand-accent focus:border-transparent disabled:opacity-60 disabled:bg-slate-100 transition-all duration-200 ease-in-out shadow-sm hover:shadow";
 
   const [posterPreview, setPosterPreview] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
@@ -84,8 +84,9 @@ export default function EventForm({
   return (
     <div className="grid gap-8">
       {/* Basic Information Section */}
-      <section>
-        <h2 className="text-base font-semibold text-brand-text mb-4">
+      <section className="bg-white rounded-[2rem] p-6 md:p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100/60 backdrop-blur-xl">
+        <h2 className="text-xl font-bold text-brand-text mb-6 flex items-center gap-2">
+          <span className="w-2 h-6 bg-brand-primary rounded-full inline-block"></span>
           Basic Information
         </h2>
 
@@ -94,10 +95,10 @@ export default function EventForm({
           <div className="md:col-span-1 space-y-8">
             {/* Event Logo */}
             <div className="max-w-[240px] mx-auto md:mx-0">
-              <label className="block text-sm font-medium text-brand-text mb-2">
+              <label className="block text-sm font-semibold text-brand-text mb-2">
                 Event Logo (Optional)
               </label>
-              <div className="relative group aspect-square rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 shadow-sm transition-all hover:border-brand-accent">
+              <div className="relative group aspect-square rounded-3xl overflow-hidden bg-slate-50/80 border-2 border-dashed border-slate-200 transition-all duration-300 hover:border-brand-primary hover:bg-slate-100/80 hover:shadow-lg hover:-translate-y-1">
                 {logoPreview ? (
                   <div className="relative w-full h-full">
                     <img
@@ -134,10 +135,10 @@ export default function EventForm({
 
             {/* Event Poster */}
             <div className="max-w-[240px] mx-auto md:mx-0">
-              <label className="block text-sm font-medium text-brand-text mb-2">
+              <label className="block text-sm font-semibold text-brand-text mb-2">
                 Event Poster (Optional)
               </label>
-              <div className="relative group aspect-square rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 shadow-sm transition-all hover:border-brand-accent">
+              <div className="relative group aspect-square rounded-3xl overflow-hidden bg-slate-50/80 border-2 border-dashed border-slate-200 transition-all duration-300 hover:border-brand-primary hover:bg-slate-100/80 hover:shadow-lg hover:-translate-y-1">
                 {posterPreview ? (
                   <div className="relative w-full h-full">
                     <img
@@ -175,7 +176,7 @@ export default function EventForm({
           <div className="md:col-span-2 space-y-6">
             {/* Event Name */}
             <div>
-              <label className="text-sm font-medium text-brand-text">Event Name</label>
+              <label className="text-sm font-semibold text-brand-text">Event Name</label>
               <input
                 disabled={!isEditable}
                 value={name}
@@ -186,9 +187,9 @@ export default function EventForm({
             </div>
 
             {/* Event Timing Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className="text-sm font-medium text-brand-text">Event Start (Date & Time)</label>
+                <label className="text-sm font-semibold text-brand-text">Event Start (Date & Time)</label>
                 <input
                   disabled={!isEditable}
                   type="datetime-local"
@@ -198,7 +199,7 @@ export default function EventForm({
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-brand-text">Event End (Date & Time)</label>
+                <label className="text-sm font-semibold text-brand-text">Event End (Date & Time)</label>
                 <input
                   disabled={!isEditable}
                   type="datetime-local"
@@ -211,7 +212,7 @@ export default function EventForm({
 
             {/* Venue */}
             <div>
-              <label className="text-sm font-medium text-brand-text">Venue</label>
+              <label className="text-sm font-semibold text-brand-text">Venue</label>
               <div className="relative mt-2">
                 <input
                   disabled={!isEditable}
@@ -246,8 +247,8 @@ export default function EventForm({
             </div>
 
             {/* Description (Now on the side of the poster) */}
-            <div className="mt-2">
-              <label className="block text-sm font-medium text-brand-text">
+            <div className="mt-4">
+              <label className="block text-sm font-semibold text-brand-text">
                 Description (optional)
               </label>
               <textarea
@@ -263,19 +264,20 @@ export default function EventForm({
         </div>
       </section>
 
-      {/* Feedback Window - REVERTED TO ORIGINAL STYLE */}
-      <div className="pt-2">
-        <h2 className="text-base font-semibold text-brand-text">
+      {/* Feedback Window */}
+      <section className="bg-white rounded-[2rem] p-6 md:p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100/60 backdrop-blur-xl">
+        <h2 className="text-xl font-bold text-brand-text flex items-center gap-2">
+          <span className="w-2 h-6 bg-indigo-400 rounded-full inline-block"></span>
           Feedback Window
         </h2>
-        <p className="text-sm text-brand-muted mt-1">
+        <p className="text-sm text-slate-500 mt-2 font-medium">
           Set when feedback collection opens and closes. (Stored in UTC;
           you&apos;ll enter in local time.)
         </p>
 
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-brand-text">
+            <label className="block text-sm font-semibold text-brand-text">
               Feedback Opening Date &amp; Time
             </label>
             <input
@@ -288,7 +290,7 @@ export default function EventForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-brand-text">
+            <label className="block text-sm font-semibold text-brand-text">
               Feedback Closing Date &amp; Time
             </label>
             <input
@@ -300,7 +302,7 @@ export default function EventForm({
             />
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
