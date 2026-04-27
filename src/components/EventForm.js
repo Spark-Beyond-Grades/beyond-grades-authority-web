@@ -36,6 +36,7 @@ export default function EventForm({
   logoUrl,
   isEditable,
   getToken,
+  universityName,
 }) {
   const inputClass =
     "mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-brand-text outline-none focus:ring-2 focus:ring-brand-accent disabled:opacity-60 disabled:bg-slate-50 transition-shadow";
@@ -62,6 +63,23 @@ export default function EventForm({
       setLogoPreview(logoUrl);
     }
   }, [logo, logoUrl]);
+  
+  const [venueSuggestions, setVenueSuggestions] = useState([]);
+
+  const loadSuggestions = useCallback(async () => {
+    if (!getToken) return;
+    try {
+      const token = await getToken();
+      const data = await getSuggestions(token);
+      setVenueSuggestions(data.venues || []);
+    } catch (err) {
+      console.error("Failed to load suggestions:", err);
+    }
+  }, [getToken]);
+
+  useEffect(() => {
+    loadSuggestions();
+  }, [loadSuggestions]);
 
   return (
     <div className="grid gap-8">
@@ -202,10 +220,21 @@ export default function EventForm({
                   className={inputClass + " pr-10 mt-0"}
                   placeholder="e.g., Auditorium, Block B"
                   autoComplete="off"
+                  list="venue-suggestions"
                 />
+                <datalist id="venue-suggestions">
+                  {venueSuggestions.map((v) => (
+                    <option key={v} value={v} />
+                  ))}
+                </datalist>
                 <button
                   type="button"
-                  onClick={() => window.open(`https://www.google.com/maps/search/${encodeURIComponent(venue || "JK Lakshmipat University")}`, "_blank")}
+                  onClick={() => {
+                    const searchQuery = venue 
+                      ? `${universityName || "JK Lakshmipat University"} ${venue}`
+                      : (universityName || "JK Lakshmipat University");
+                    window.open(`https://www.google.com/maps/search/${encodeURIComponent(searchQuery)}`, "_blank");
+                  }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-primary hover:scale-110 transition-transform"
                   title="Search on Google Maps"
                 >

@@ -134,7 +134,7 @@ export default function TeamStructureEditor({
       );
     }
 
-    const finalResults = [...starts, ...contains, ...relative].slice(0, 15);
+    const finalResults = [...starts, ...contains, ...relative].slice(0, 5);
     return Array.from(new Set(finalResults.map(toTitleCase)));
   }, []);
 

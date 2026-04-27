@@ -327,6 +327,8 @@ function EventContent() {
               setLogo={setLogo}
               logoUrl={logoUrl}
               isEditable={isEditable}
+              getToken={getToken}
+              universityName={event?.universityName}
             />
 
             <TeamStructureEditor
