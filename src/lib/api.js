@@ -75,6 +75,17 @@ export async function uploadEventPoster(token, eventId, file) {
   });
 }
 
+export async function uploadEventLogo(token, eventId, file) {
+  const form = new FormData();
+  form.append("logo", file);
+
+  return apiFetch(`/events/${eventId}/logo`, {
+    method: "POST",
+    token,
+    body: form,
+  });
+}
+
 // ── Participants ────────────────────────────────────────────────────
 
 export const getParticipants = (token, eventId) =>
@@ -90,3 +101,11 @@ export async function uploadParticipantsCsv(token, eventId, file) {
     body: form,
   });
 }
+
+// ── Feedback ────────────────────────────────────────────────────────
+
+export const getFeedbackSummary = (token) =>
+  apiFetch("/events/feedback-summary", { token });
+
+export const getSuggestions = (token) =>
+  apiFetch("/events/suggestions", { token });

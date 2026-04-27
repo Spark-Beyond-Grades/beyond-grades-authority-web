@@ -71,26 +71,35 @@ export default function ParticipantUploader({
   };
 
   return (
-    <div className="pt-2">
-      <div className="flex items-center justify-between mb-6">
+    <section className="bg-white rounded-[2rem] p-6 md:p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100/60 backdrop-blur-xl mt-8">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Participants</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="text-xl font-bold text-brand-text flex items-center gap-2">
+            <span className="w-2 h-6 bg-blue-500 rounded-full inline-block"></span>
+            Participants
+          </h2>
+          <p className="text-sm text-slate-500 mt-2 font-medium">
             Manage your event participants with a CSV upload
           </p>
         </div>
-        <div className="text-right">
-          <div className="text-3xl font-bold text-blue-600">{participantsCount}</div>
-          <div className="text-xs text-gray-500">Total Participants</div>
+        <div className="text-right bg-blue-50/50 rounded-2xl px-5 py-3 border border-blue-100">
+          <div className="text-3xl font-black text-blue-600">{participantsCount}</div>
+          <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mt-1">Total Uploaded</div>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* CSV Format Info */}
-        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
-          <div className="text-sm font-semibold text-gray-900">📋 CSV Format Required</div>
-          <p className="text-xs text-gray-600 mt-2">
-            Columns: <span className="bg-white px-2 py-1 rounded font-mono text-gray-700">name, email, rollNumber, committee, level, position</span>
+        <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+          <div className="text-sm font-bold text-slate-800">📋 CSV Format Required</div>
+          <p className="text-sm text-slate-600 mt-2 flex flex-wrap gap-2 items-center">
+            Columns: 
+            <span className="bg-white px-3 py-1 rounded-lg font-mono text-xs border border-slate-200 shadow-sm text-slate-700">name</span>
+            <span className="bg-white px-3 py-1 rounded-lg font-mono text-xs border border-slate-200 shadow-sm text-slate-700">email</span>
+            <span className="bg-white px-3 py-1 rounded-lg font-mono text-xs border border-slate-200 shadow-sm text-slate-700">rollNumber</span>
+            <span className="bg-white px-3 py-1 rounded-lg font-mono text-xs border border-slate-200 shadow-sm text-slate-700">committee</span>
+            <span className="bg-white px-3 py-1 rounded-lg font-mono text-xs border border-slate-200 shadow-sm text-slate-700">level</span>
+            <span className="bg-white px-3 py-1 rounded-lg font-mono text-xs border border-slate-200 shadow-sm text-slate-700">position</span>
           </p>
         </div>
 
@@ -100,11 +109,10 @@ export default function ParticipantUploader({
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
-          className={`relative rounded-xl border-2 border-dashed transition-all duration-200 ${
-            dragActive
-              ? "border-blue-500 bg-blue-50"
-              : "border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400"
-          } ${!isEditable || uploading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+          className={`relative rounded-[2rem] border-2 border-dashed transition-all duration-300 ${dragActive
+            ? "border-blue-500 bg-blue-50/50 shadow-inner"
+            : "border-slate-300 bg-slate-50/50 hover:bg-slate-100/50 hover:border-brand-primary"
+            } ${!isEditable || uploading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
         >
           <input
             ref={fileInputRef}
@@ -117,17 +125,19 @@ export default function ParticipantUploader({
 
           <div
             onClick={() => !uploading && isEditable ? fileInputRef.current?.click() : null}
-            className="flex flex-col items-center justify-center py-12 px-4"
+            className="flex flex-col items-center justify-center py-16 px-6"
           >
-            <div className={`text-5xl mb-3 transition-transform ${dragActive ? "scale-125" : "scale-100"}`}>
-              <HiOutlineArrowUpTray className={`w-12 h-12 ${dragActive ? "text-blue-600" : "text-gray-400"}`} />
+            <div className={`mb-4 transition-transform duration-300 ${dragActive ? "scale-125 -translate-y-2" : "scale-100 hover:scale-110"}`}>
+              <div className={`p-4 rounded-full ${dragActive ? "bg-blue-100 text-blue-600" : "bg-white text-slate-400 shadow-sm border border-slate-100"}`}>
+                <HiOutlineArrowUpTray className="w-10 h-10" />
+              </div>
             </div>
             <div className="text-center">
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-lg font-bold text-slate-800">
                 {dragActive ? "Drop your CSV here" : "Upload CSV File"}
               </p>
-              <p className="text-sm text-gray-500 mt-1">
-                Drag and drop your file or click to browse
+              <p className="text-sm text-slate-500 mt-2 font-medium">
+                Drag and drop your file or <span className="text-brand-primary">click to browse</span>
               </p>
             </div>
           </div>
@@ -135,23 +145,22 @@ export default function ParticipantUploader({
 
         {/* Upload Status */}
         {uploading && (
-          <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
-            <span className="text-sm text-blue-700 font-medium">Uploading your file...</span>
+          <div className="flex items-center gap-3 bg-blue-50/80 border border-blue-200 rounded-2xl p-5 shadow-sm">
+            <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-ping"></div>
+            <span className="text-sm text-blue-700 font-bold">Uploading and processing your file...</span>
           </div>
         )}
 
         {/* Upload Message */}
         {uploadMsg && (
-          <div className={`rounded-lg p-4 text-sm font-medium border ${
-            uploadMsg.startsWith("✅")
-              ? "bg-green-50 border-green-200 text-green-800"
-              : "bg-red-50 border-red-200 text-red-800"
-          }`}>
+          <div className={`rounded-2xl p-5 text-sm font-bold shadow-sm border transition-all ${uploadMsg.startsWith("✅")
+            ? "bg-green-50 border-green-200 text-green-800"
+            : "bg-red-50 border-red-200 text-red-800"
+            }`}>
             {uploadMsg}
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }
