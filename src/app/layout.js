@@ -16,6 +16,9 @@ export const metadata = {
   title: "Beyond Grades — Authority Portal",
   description:
     "Manage feedback events, team structures, and participant reviews for your organization.",
+  icons: {
+    icon: "/beyond_grades_logo.png",
+  },
 };
 
 export default function RootLayout({ children }) {

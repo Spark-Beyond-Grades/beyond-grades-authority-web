@@ -57,6 +57,7 @@ function EventContent() {
   // Actions
   const [closing, setClosing] = useState(false);
   const [actionMsg, setActionMsg] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
 
   const isPublished = event?.status === "PUBLISHED";
   const isClosed = event?.status === "CLOSED" || !!event?.closeAtActual;
@@ -162,6 +163,8 @@ function EventContent() {
       setError(e.message || "Failed to save");
     } finally {
       setSaving(false);
+      setSuccessMsg("✅ Draft saved successfully");
+      setTimeout(() => setSuccessMsg(null), 3000);
     }
   };
   const handlePublish = async () => {
@@ -292,6 +295,13 @@ function EventContent() {
                 {actionMsg}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Success Message */}
+        {successMsg && (
+          <div className="mt-4 rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm text-teal-700 animate-fade-in">
+            {successMsg}
           </div>
         )}
 

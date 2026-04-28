@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getSuggestions } from "@/lib/api";
+import ImageCropper from "./ImageCropper";
 
 const toTitleCase = (str) => {
   if (!str) return "";
@@ -38,6 +39,8 @@ export default function EventForm({
   getToken,
   universityName,
 }) {
+  const [cropData, setCropData] = useState({ open: false, image: null, type: null });
+
   const inputClass =
     "mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-brand-text outline-none focus:bg-white focus:ring-2 focus:ring-brand-accent focus:border-transparent disabled:opacity-60 disabled:bg-slate-100 transition-all duration-200 ease-in-out shadow-sm hover:shadow";
 
@@ -63,7 +66,7 @@ export default function EventForm({
       setLogoPreview(logoUrl);
     }
   }, [logo, logoUrl]);
-  
+
   const [venueSuggestions, setVenueSuggestions] = useState([]);
 
   const loadSuggestions = useCallback(async () => {
@@ -129,7 +132,25 @@ export default function EventForm({
                     <span className="text-xs font-bold">Upload Logo</span>
                   </label>
                 )}
-                {isEditable && <input type="file" accept="image/*" onChange={(e) => setLogo(e.target.files[0])} className="hidden" id="logo-upload" />}
+                {isEditable && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setCropData({ open: true, image: reader.result, type: "logo" });
+                        };
+                        reader.readAsDataURL(file);
+                        e.target.value = ""; // Reset so same file can be selected again
+                      }
+                    }}
+                    className="hidden"
+                    id="logo-upload"
+                  />
+                )}
               </div>
             </div>
 
@@ -138,13 +159,13 @@ export default function EventForm({
               <label className="block text-sm font-semibold text-brand-text mb-2">
                 Event Poster (Optional)
               </label>
-              <div className="relative group aspect-square rounded-3xl overflow-hidden bg-slate-50/80 border-2 border-dashed border-slate-200 transition-all duration-300 hover:border-brand-primary hover:bg-slate-100/80 hover:shadow-lg hover:-translate-y-1">
+              <div className="relative group aspect-[210/297] rounded-3xl overflow-hidden bg-slate-50/80 border-2 border-dashed border-slate-200 transition-all duration-300 hover:border-brand-primary hover:bg-slate-100/80 hover:shadow-lg hover:-translate-y-1">
                 {posterPreview ? (
                   <div className="relative w-full h-full">
                     <img
                       src={posterPreview}
                       alt="Poster preview"
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-contain"
                     />
                     {isEditable && (
                       <button
@@ -167,7 +188,25 @@ export default function EventForm({
                     <span className="text-xs font-bold">Upload Poster</span>
                   </label>
                 )}
-                {isEditable && <input type="file" accept="image/*" onChange={(e) => setPoster(e.target.files[0])} className="hidden" id="poster-upload" />}
+                {isEditable && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setCropData({ open: true, image: reader.result, type: "poster" });
+                        };
+                        reader.readAsDataURL(file);
+                        e.target.value = ""; // Reset so same file can be selected again
+                      }
+                    }}
+                    className="hidden"
+                    id="poster-upload"
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -231,7 +270,7 @@ export default function EventForm({
                 <button
                   type="button"
                   onClick={() => {
-                    const searchQuery = venue 
+                    const searchQuery = venue
                       ? `${universityName || "JK Lakshmipat University"} ${venue}`
                       : (universityName || "JK Lakshmipat University");
                     window.open(`https://www.google.com/maps/search/${encodeURIComponent(searchQuery)}`, "_blank");
@@ -255,7 +294,7 @@ export default function EventForm({
                 disabled={!isEditable}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={6}
+                rows={11}
                 className={inputClass}
                 placeholder="Tell us more about the event in detail..."
               />
@@ -303,6 +342,19 @@ export default function EventForm({
           </div>
         </div>
       </section>
+
+      {cropData.open && (
+        <ImageCropper
+          image={cropData.image}
+          aspect={cropData.type === "logo" ? 1 : 595 / 842}
+          onCropComplete={(croppedFile) => {
+            if (cropData.type === "logo") setLogo(croppedFile);
+            if (cropData.type === "poster") setPoster(croppedFile);
+            setCropData({ open: false, image: null, type: null });
+          }}
+          onCancel={() => setCropData({ open: false, image: null, type: null })}
+        />
+      )}
     </div>
   );
 }
