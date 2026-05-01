@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getSuggestions } from "@/lib/api";
 import ImageCropper from "./ImageCropper";
+import { CROP_UPLOAD_ACCEPT, createCropImageFromFile } from "./cropUploadFile.mjs";
 
 const toTitleCase = (str) => {
   if (!str) return "";
@@ -40,6 +41,7 @@ export default function EventForm({
   universityName,
 }) {
   const [cropData, setCropData] = useState({ open: false, image: null, type: null });
+  const [cropUploadState, setCropUploadState] = useState({ loadingType: null, error: null });
 
   const inputClass =
     "mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-brand-text outline-none focus:bg-white focus:ring-2 focus:ring-brand-accent focus:border-transparent disabled:opacity-60 disabled:bg-slate-100 transition-all duration-200 ease-in-out shadow-sm hover:shadow";
@@ -83,6 +85,26 @@ export default function EventForm({
   useEffect(() => {
     loadSuggestions();
   }, [loadSuggestions]);
+
+  const handleCropUpload = async (file, type) => {
+    if (!file) return;
+
+    setCropUploadState({ loadingType: type, error: null });
+
+    try {
+      const cropImage = await createCropImageFromFile(file);
+      setCropData({ open: true, image: cropImage, type });
+    } catch (err) {
+      console.error("Failed to prepare upload for cropping:", err);
+      setCropUploadState({
+        loadingType: null,
+        error: err instanceof Error ? err.message : "Could not prepare the selected file.",
+      });
+      return;
+    }
+
+    setCropUploadState({ loadingType: null, error: null });
+  };
 
   return (
     <div className="grid gap-8">
@@ -135,17 +157,11 @@ export default function EventForm({
                 {isEditable && (
                   <input
                     type="file"
-                    accept="image/*"
+                    accept={CROP_UPLOAD_ACCEPT}
                     onChange={(e) => {
                       const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          setCropData({ open: true, image: reader.result, type: "logo" });
-                        };
-                        reader.readAsDataURL(file);
-                        e.target.value = ""; // Reset so same file can be selected again
-                      }
+                      handleCropUpload(file, "logo");
+                      e.target.value = ""; // Reset so same file can be selected again
                     }}
                     className="hidden"
                     id="logo-upload"
@@ -191,17 +207,11 @@ export default function EventForm({
                 {isEditable && (
                   <input
                     type="file"
-                    accept="image/*"
+                    accept={CROP_UPLOAD_ACCEPT}
                     onChange={(e) => {
                       const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          setCropData({ open: true, image: reader.result, type: "poster" });
-                        };
-                        reader.readAsDataURL(file);
-                        e.target.value = ""; // Reset so same file can be selected again
-                      }
+                      handleCropUpload(file, "poster");
+                      e.target.value = ""; // Reset so same file can be selected again
                     }}
                     className="hidden"
                     id="poster-upload"
@@ -302,6 +312,16 @@ export default function EventForm({
           </div>
         </div>
       </section>
+
+      {(cropUploadState.loadingType || cropUploadState.error) && (
+        <div className={`rounded-2xl border px-5 py-4 text-sm font-semibold ${
+          cropUploadState.error
+            ? "border-red-100 bg-red-50 text-red-700"
+            : "border-teal-100 bg-teal-50 text-[#008c82]"
+        }`}>
+          {cropUploadState.error || `Preparing ${cropUploadState.loadingType} for cropping...`}
+        </div>
+      )}
 
       {/* Feedback Window */}
       <section className="bg-white rounded-[2rem] p-6 md:p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100/60 backdrop-blur-xl">
