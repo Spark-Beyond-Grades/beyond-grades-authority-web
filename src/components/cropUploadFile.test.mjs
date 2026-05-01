@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { CROP_UPLOAD_ACCEPT, getCropUploadKind } from "./cropUploadFile.mjs";
+import {
+  CROP_UPLOAD_ACCEPT,
+  configurePdfJsForMainThreadWorker,
+  getCropUploadKind,
+} from "./cropUploadFile.mjs";
 
 test("accepts image files for crop upload", () => {
   assert.equal(getCropUploadKind({ type: "image/png", name: "poster.png" }), "image");
@@ -20,4 +24,16 @@ test("rejects unsupported crop upload files", () => {
 
 test("uses one accept value for both image and PDF inputs", () => {
   assert.equal(CROP_UPLOAD_ACCEPT, "image/*,application/pdf");
+});
+
+test("configures PDF.js fake worker before rendering PDFs", () => {
+  const workerModule = { WorkerMessageHandler: {} };
+  const pdfjs = { GlobalWorkerOptions: { workerSrc: "" } };
+
+  configurePdfJsForMainThreadWorker(pdfjs, workerModule);
+
+  assert.equal(globalThis.pdfjsWorker, workerModule);
+  assert.equal(pdfjs.GlobalWorkerOptions.workerSrc, "");
+
+  delete globalThis.pdfjsWorker;
 });

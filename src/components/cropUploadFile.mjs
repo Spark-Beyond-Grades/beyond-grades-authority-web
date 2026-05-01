@@ -37,8 +37,11 @@ function readFileAsDataUrl(file) {
 
 async function renderFirstPdfPageAsDataUrl(file) {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const workerModule = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
+  configurePdfJsForMainThreadWorker(pdfjs, workerModule);
+
   const data = new Uint8Array(await file.arrayBuffer());
-  const pdf = await pdfjs.getDocument({ data, disableWorker: true }).promise;
+  const pdf = await pdfjs.getDocument({ data }).promise;
   const page = await pdf.getPage(1);
   const viewport = page.getViewport({ scale: 1 });
   const scale = Math.min(2, 2400 / Math.max(viewport.width, viewport.height));
@@ -56,4 +59,12 @@ async function renderFirstPdfPageAsDataUrl(file) {
   await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
 
   return canvas.toDataURL("image/png");
+}
+
+export function configurePdfJsForMainThreadWorker(pdfjs, workerModule) {
+  globalThis.pdfjsWorker = workerModule;
+
+  if (pdfjs?.GlobalWorkerOptions) {
+    pdfjs.GlobalWorkerOptions.workerSrc = "";
+  }
 }
