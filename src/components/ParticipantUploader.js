@@ -79,7 +79,7 @@ export default function ParticipantUploader({
             Participants
           </h2>
           <p className="text-sm text-slate-500 mt-2 font-medium">
-            Manage your event participants with a CSV upload
+            Optionally upload participants for events that collect feedback
           </p>
         </div>
         <div className="text-right bg-blue-50/50 rounded-2xl px-5 py-3 border border-blue-100">
@@ -91,7 +91,7 @@ export default function ParticipantUploader({
       <div className="space-y-6">
         {/* CSV Format Info */}
         <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-          <div className="text-sm font-bold text-slate-800">📋 CSV Format Required</div>
+          <div className="text-sm font-bold text-slate-800">CSV Format</div>
           <p className="text-sm text-slate-600 mt-2 flex flex-wrap gap-2 items-center">
             Columns: 
             <span className="bg-white px-3 py-1 rounded-lg font-mono text-xs border border-slate-200 shadow-sm text-slate-700">name</span>

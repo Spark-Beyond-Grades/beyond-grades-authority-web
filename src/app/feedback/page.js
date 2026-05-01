@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { getFeedbackSummary } from "@/lib/api";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Navbar from "@/components/Navbar";
+import { getTrackableFeedbackSummaries } from "./feedbackSummaryFilters.mjs";
 
 /* ─── SVG Icons ─── */
 const CheckCircleIcon = () => (
@@ -441,7 +442,7 @@ function FeedbackContent() {
     try {
       const token = await getToken();
       const data = await getFeedbackSummary(token);
-      setSummaries(data.summaries || []);
+      setSummaries(getTrackableFeedbackSummaries(data.summaries));
     } catch (e) {
       setError(e.message || "Failed to load feedback data");
     } finally {
@@ -509,9 +510,9 @@ function FeedbackContent() {
               <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-brand-primary/10 to-brand-secondary/10 flex items-center justify-center mb-5 text-brand-primary">
                 <BarChartIcon />
               </div>
-              <h2 className="text-xl font-bold text-brand-text">No published events yet</h2>
+              <h2 className="text-xl font-bold text-brand-text">No feedback events yet</h2>
               <p className="text-sm text-brand-muted mt-2 max-w-sm mx-auto">
-                Publish an event first to start tracking feedback submissions from participants.
+                Publish an event with uploaded participants to start tracking feedback submissions.
               </p>
             </div>
           ) : (

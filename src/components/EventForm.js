@@ -330,7 +330,7 @@ export default function EventForm({
           Feedback Window
         </h2>
         <p className="text-sm text-slate-500 mt-2 font-medium">
-          Set when feedback collection opens and closes. (Stored in UTC;
+          Optional schedule for events that collect feedback. (Stored in UTC;
           you&apos;ll enter in local time.)
         </p>
 
@@ -350,7 +350,7 @@ export default function EventForm({
 
           <div>
             <label className="block text-sm font-semibold text-brand-text">
-              Feedback Closing Date &amp; Time
+              Tentative Feedback Closing Date &amp; Time (Optional)
             </label>
             <input
               disabled={!isEditable}
