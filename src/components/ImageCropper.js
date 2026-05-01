@@ -2,11 +2,15 @@
 
 import { useState, useCallback } from "react";
 import Cropper from "react-easy-crop";
+import { getFitZoom } from "./imageCropperSizing.mjs";
 
 export default function ImageCropper({ image, onCropComplete, onCancel, aspect = 1 }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [minZoom, setMinZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const maxZoom = 3;
+  const zoomProgress = ((zoom - minZoom) / (maxZoom - minZoom)) * 100;
 
   const onCropChange = (crop) => {
     setCrop(crop);
@@ -15,6 +19,13 @@ export default function ImageCropper({ image, onCropComplete, onCancel, aspect =
   const onZoomChange = (zoom) => {
     setZoom(zoom);
   };
+
+  const onMediaLoaded = useCallback((mediaSize) => {
+    const nextMinZoom = getFitZoom(mediaSize, aspect);
+    setMinZoom(nextMinZoom);
+    setZoom(nextMinZoom);
+    setCrop({ x: 0, y: 0 });
+  }, [aspect]);
 
   const onCropCompleteInternal = useCallback((croppedArea, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
@@ -46,10 +57,14 @@ export default function ImageCropper({ image, onCropComplete, onCancel, aspect =
             image={image}
             crop={crop}
             zoom={zoom}
+            minZoom={minZoom}
+            maxZoom={maxZoom}
             aspect={aspect}
+            objectFit="contain"
             onCropChange={onCropChange}
             onCropComplete={onCropCompleteInternal}
             onZoomChange={onZoomChange}
+            onMediaLoaded={onMediaLoaded}
           />
         </div>
 
@@ -57,18 +72,18 @@ export default function ImageCropper({ image, onCropComplete, onCancel, aspect =
           <div className="space-y-3">
             <div className="flex justify-between items-end">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Zoom Level</span>
-              <span className="text-sm font-bold text-[#00A99D]">{Math.round(((zoom - 1) / (3 - 1)) * 100)}%</span>
+              <span className="text-sm font-bold text-[#00A99D]">{Math.round(zoomProgress)}%</span>
             </div>
             <input
               type="range"
               value={zoom}
-              min={1}
-              max={3}
-              step={0.1}
+              min={minZoom}
+              max={maxZoom}
+              step={0.01}
               aria-labelledby="Zoom"
               onChange={(e) => setZoom(parseFloat(e.target.value))}
               style={{
-                background: `linear-gradient(to right, #00A99D 0%, #00A99D ${((zoom - 1) / (3 - 1)) * 100}%, #f1f5f9 ${((zoom - 1) / (3 - 1)) * 100}%, #f1f5f9 100%)`
+                background: `linear-gradient(to right, #00A99D 0%, #00A99D ${zoomProgress}%, #f1f5f9 ${zoomProgress}%, #f1f5f9 100%)`
               }}
               className="w-full h-2 rounded-lg appearance-none cursor-pointer transition-all duration-200"
             />
