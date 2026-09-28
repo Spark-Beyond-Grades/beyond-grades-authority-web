@@ -33,10 +33,13 @@ export default function EventForm({
   poster,
   setPoster,
   posterUrl,
+  setPosterUrl,
   logo,
   setLogo,
   logoUrl,
+  setLogoUrl,
   isEditable,
+  imagesEditable = isEditable,
   getToken,
   universityName,
 }) {
@@ -130,38 +133,53 @@ export default function EventForm({
                       src={logoPreview}
                       alt="Logo preview"
                       className="h-full w-full object-contain p-4"
+                      onError={(e) => {
+                        e.currentTarget.style.opacity = "0.35";
+                      }}
                     />
-                    {isEditable && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLogo(null);
-                          setLogoPreview(logoUrl);
-                        }}
-                        className="absolute right-2 top-2 rounded-full bg-black/50 p-1.5 text-white backdrop-blur-sm hover:bg-black/70 transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </button>
+                    {imagesEditable && (
+                      <div className="absolute inset-x-0 bottom-0 flex gap-2 p-2 bg-gradient-to-t from-black/55 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <label
+                          htmlFor="logo-upload"
+                          className="flex-1 cursor-pointer rounded-xl bg-white/95 text-brand-text text-xs font-bold py-2 text-center hover:bg-white"
+                        >
+                          Replace
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLogo(null);
+                            if (setLogoUrl) setLogoUrl(null);
+                            setLogoPreview(null);
+                          }}
+                          className="rounded-xl bg-black/60 text-white text-xs font-bold px-3 py-2 hover:bg-black/80"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     )}
                   </div>
                 ) : (
-                  <label htmlFor="logo-upload" className="flex flex-col items-center justify-center w-full h-full cursor-pointer text-slate-300">
+                  <label
+                    htmlFor="logo-upload"
+                    className={`flex flex-col items-center justify-center w-full h-full text-slate-300 ${
+                      imagesEditable ? "cursor-pointer" : "pointer-events-none opacity-60"
+                    }`}
+                  >
                     <svg className="w-10 h-10 mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
                     </svg>
                     <span className="text-xs font-bold">Upload Logo</span>
                   </label>
                 )}
-                {isEditable && (
+                {imagesEditable && (
                   <input
                     type="file"
                     accept={CROP_UPLOAD_ACCEPT}
                     onChange={(e) => {
                       const file = e.target.files[0];
                       handleCropUpload(file, "logo");
-                      e.target.value = ""; // Reset so same file can be selected again
+                      e.target.value = "";
                     }}
                     className="hidden"
                     id="logo-upload"
@@ -182,36 +200,51 @@ export default function EventForm({
                       src={posterPreview}
                       alt="Poster preview"
                       className="h-full w-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.opacity = "0.35";
+                      }}
                     />
-                    {isEditable && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPoster(null);
-                          setPosterPreview(posterUrl);
-                        }}
-                        className="absolute right-2 top-2 rounded-full bg-black/50 p-1.5 text-white backdrop-blur-sm hover:bg-black/70 transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </button>
+                    {imagesEditable && (
+                      <div className="absolute inset-x-0 bottom-0 flex gap-2 p-2 bg-gradient-to-t from-black/55 to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <label
+                          htmlFor="poster-upload"
+                          className="flex-1 cursor-pointer rounded-xl bg-white/95 text-brand-text text-xs font-bold py-2 text-center hover:bg-white"
+                        >
+                          Replace
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPoster(null);
+                            if (setPosterUrl) setPosterUrl(null);
+                            setPosterPreview(null);
+                          }}
+                          className="rounded-xl bg-black/60 text-white text-xs font-bold px-3 py-2 hover:bg-black/80"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     )}
                   </div>
                 ) : (
-                  <label htmlFor="poster-upload" className="flex flex-col items-center justify-center w-full h-full cursor-pointer text-slate-300">
+                  <label
+                    htmlFor="poster-upload"
+                    className={`flex flex-col items-center justify-center w-full h-full text-slate-300 ${
+                      imagesEditable ? "cursor-pointer" : "pointer-events-none opacity-60"
+                    }`}
+                  >
                     <svg className="w-10 h-10 mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 012 2v-14a2 2 0 01-2-2H6a2 2 0 01-2 2v14a2 2 0 012 2z" /></svg>
                     <span className="text-xs font-bold">Upload Poster</span>
                   </label>
                 )}
-                {isEditable && (
+                {imagesEditable && (
                   <input
                     type="file"
                     accept={CROP_UPLOAD_ACCEPT}
                     onChange={(e) => {
                       const file = e.target.files[0];
                       handleCropUpload(file, "poster");
-                      e.target.value = ""; // Reset so same file can be selected again
+                      e.target.value = "";
                     }}
                     className="hidden"
                     id="poster-upload"

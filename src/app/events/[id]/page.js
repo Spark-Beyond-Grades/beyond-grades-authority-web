@@ -62,6 +62,7 @@ function EventContent() {
   const isPublished = event?.status === "PUBLISHED";
   const isClosed = event?.status === "CLOSED" || !!event?.closeAtActual;
   const isEditable = event?.effectiveStatus === "DRAFT";
+  const imagesEditable = !isClosed;
 
   const load = useCallback(async () => {
     setError(null);
@@ -151,19 +152,32 @@ function EventContent() {
         setLogo(null);
       }
 
-      // 3. Save other fields
-      const payload = {
-        ...buildPayload(),
-        posterUrl: currentPosterUrl,
-        logoUrl: currentLogoUrl,
-      };
-      const data = await updateEvent(token, id, payload);
-      setEvent(data.event);
+      // Draft: save full form. Published: persist image URLs (uploads + removals).
+      if (isEditable) {
+        const payload = {
+          ...buildPayload(),
+          posterUrl: currentPosterUrl,
+          logoUrl: currentLogoUrl,
+        };
+        const data = await updateEvent(token, id, payload);
+        setEvent(data.event);
+      } else {
+        const imagesChanged =
+          currentPosterUrl !== (event?.posterUrl || null) ||
+          currentLogoUrl !== (event?.logoUrl || null);
+        if (imagesChanged) {
+          const data = await updateEvent(token, id, {
+            posterUrl: currentPosterUrl,
+            logoUrl: currentLogoUrl,
+          });
+          setEvent(data.event);
+        }
+      }
     } catch (e) {
       setError(e.message || "Failed to save");
     } finally {
       setSaving(false);
-      setSuccessMsg("✅ Draft saved successfully");
+      setSuccessMsg(isEditable ? "✅ Draft saved successfully" : "✅ Images updated");
       setTimeout(() => setSuccessMsg(null), 3000);
     }
   };
@@ -268,7 +282,9 @@ function EventContent() {
             <p className="text-sm text-slate-500 mt-2 font-medium">
               {isEditable
                 ? "Complete setup and publish."
-                : "This event is live. Editing is locked."}
+                : isClosed
+                  ? "This event is closed. Editing is locked."
+                  : "Event details are locked. You can still replace logo and poster images."}
             </p>
           </div>
           <button
@@ -333,10 +349,13 @@ function EventContent() {
               poster={poster}
               setPoster={setPoster}
               posterUrl={posterUrl}
+              setPosterUrl={setPosterUrl}
               logo={logo}
               setLogo={setLogo}
               logoUrl={logoUrl}
+              setLogoUrl={setLogoUrl}
               isEditable={isEditable}
+              imagesEditable={imagesEditable}
               getToken={getToken}
               universityName={event?.universityName}
             />
@@ -375,13 +394,23 @@ function EventContent() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={!isEditable || saving}
+                disabled={
+                  saving ||
+                  (!isEditable &&
+                    !(poster || logo) &&
+                    posterUrl === (event?.posterUrl || null) &&
+                    logoUrl === (event?.logoUrl || null))
+                }
                 className="flex items-center gap-2 rounded-full bg-brand-primary text-white font-semibold px-8 py-2.5 shadow-sm hover:shadow-md hover:opacity-95 disabled:opacity-60 transition-all"
               >
                 {saving && (
                   <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 )}
-                {saving ? "Saving..." : "Save Changes"}
+                {saving
+                  ? "Saving..."
+                  : isEditable
+                    ? "Save Changes"
+                    : "Save Images"}
               </button>
             </div>
           </div>
