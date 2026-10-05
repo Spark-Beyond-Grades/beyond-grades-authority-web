@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { contributesToScoringChoice } from "@/lib/scoringChoices.mjs";
 
 const RULES = [
@@ -7,6 +8,33 @@ const RULES = [
   ["blankSkillPolicy", "Blank or skipped skill", [["ignoreSkill", "Ignore that skill for that rater"], ["ignorePair", "Ignore the whole review"]]],
   ["unscoredSkillPolicy", "Skill with no ratings", [["exclude", "Leave it out of event EPA"], ["block", "Block event EPA"]]],
 ];
+
+export function defaultScoringConfig(levels = [], committees = [], skills = []) {
+  return {
+    scaleMin: 1,
+    scaleMax: 10,
+    levelInfluence: 0,
+    committeeWeightSame: 1,
+    committeeWeightTop: 1,
+    committeeWeightOther: 1,
+    credibilityEpsilon: 0.05,
+    credibilityShrinkage: 5,
+    confidencePrior: 5,
+    evenMedianRule: "average",
+    allowSelfRatings: false,
+    blankSkillPolicy: "ignoreSkill",
+    unscoredSkillPolicy: "exclude",
+    crossEventRule: "confidence",
+    applyRelevanceToSkillWeights: false,
+    contributesToScoring: true,
+    lateSubmissions: "reject",
+    identifyRaters: false,
+    showComments: true,
+    levelRanks: Object.fromEntries(levels.map((level, index) => [level, index + 1])),
+    skillWeights: Object.fromEntries(skills.map((skill) => [skill, 1])),
+    relevance: Object.fromEntries(committees.map((committee) => [committee.name, Object.fromEntries(skills.map((skill) => [skill, 1]))])),
+  };
+}
 
 function Field({ label, value, onChange, disabled }) {
   return (
@@ -18,7 +46,10 @@ function Field({ label, value, onChange, disabled }) {
 }
 
 export default function ScoringSettings({ levels, committees, skills, value, onChange, disabled }) {
-  const config = value || {};
+  const config = { ...defaultScoringConfig(levels, committees, skills), ...(value || {}), levelRanks: { ...defaultScoringConfig(levels, committees, skills).levelRanks, ...(value?.levelRanks || {}) }, skillWeights: { ...defaultScoringConfig(levels, committees, skills).skillWeights, ...(value?.skillWeights || {}) }, relevance: { ...defaultScoringConfig(levels, committees, skills).relevance, ...(value?.relevance || {}) } };
+  useEffect(() => {
+    if (!value || Object.keys(value).length === 0) onChange(config);
+  }, [levels, committees, skills]);
   const set = (patch) => onChange({ ...config, ...patch });
   const setRank = (level, rank) => set({ levelRanks: { ...(config.levelRanks || {}), [level]: rank } });
   const setWeight = (skill, weight) => set({ skillWeights: { ...(config.skillWeights || {}), [skill]: weight } });
@@ -32,7 +63,7 @@ export default function ScoringSettings({ levels, committees, skills, value, onC
   return (
     <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
       <h2 className="text-lg font-semibold">Scoring</h2>
-      <p className="mt-1 text-sm text-slate-500">Every value starts empty. A score is produced only after this event has all of them.</p>
+      <p className="mt-1 text-sm text-slate-500">Safe defaults are pre-filled. You can adjust them if your event needs a different scoring model.</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <Field label="Lowest raw rating" value={config.scaleMin} disabled={disabled} onChange={(scaleMin) => set({ scaleMin })} />
         <Field label="Highest raw rating" value={config.scaleMax} disabled={disabled} onChange={(scaleMax) => set({ scaleMax })} />
