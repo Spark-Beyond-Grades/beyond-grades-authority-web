@@ -12,7 +12,6 @@ import {
   uploadEventPoster,
   deleteEvent,
   previewEventScores,
-  recalculateEventScores,
 } from "@/lib/api";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -286,20 +285,6 @@ function EventContent() {
     }
   };
 
-  const handleRecalculate = async () => {
-    const yes = confirm("Recalculate scores and keep the previous result in the audit history?");
-    if (!yes) return;
-    try {
-      const token = await getToken();
-      const data = await recalculateEventScores(token, id);
-      setEvent((current) => ({ ...(current || {}), frozenScores: data.frozenScores, frozenScoreHistory: data.history }));
-      setScorePreview(data.frozenScores);
-      setActionMsg("Scores recalculated. The previous snapshot is kept.");
-    } catch (e) {
-      setActionMsg(e.message || "Recalculate failed");
-    }
-  };
-
   const handlePreviewScores = async () => {
     try {
       const token = await getToken();
@@ -413,7 +398,7 @@ function EventContent() {
               onClick={handleClose}
               className="rounded-xl bg-status-closed text-white font-medium px-4 py-2 hover:opacity-95 disabled:opacity-60 transition-opacity"
             >
-              {closing ? "Closing..." : "Close Feedback"}
+              {closing ? "Calculating..." : "Calculate EPA & End Feedback"}
             </button>
             {actionMsg && (
               <div className="text-sm rounded-lg px-3 py-2 border border-slate-200 bg-white text-brand-text">
@@ -498,9 +483,6 @@ function EventContent() {
                   Save scoring and preview
                 </button>
               ) : null}
-              <button type="button" onClick={handleRecalculate} className="rounded-full border border-slate-300 px-4 py-2 text-sm">
-                Recalculate and keep history
-              </button>
             </div>
             {(event?.frozenScoreHistory || []).length ? (
               <p className="mt-3 text-sm text-slate-600">
@@ -509,7 +491,7 @@ function EventContent() {
               </p>
             ) : null}
             {isClosed && scorePreview ? (
-              <p className="mt-3 text-sm text-slate-600">Frozen snapshot from when this event was closed. Recalculate only if you intend to replace it and keep this one in the history.</p>
+              <p className="mt-3 text-sm text-slate-600">Final EPA snapshot calculated when feedback was ended. Further feedback and recalculation are locked.</p>
             ) : null}
             {scorePreview?.frozenAt ? (
               <p className="mt-1 text-sm text-slate-600">{snapshotSavedLabel(scorePreview.frozenAt, Intl.DateTimeFormat().resolvedOptions().timeZone)}</p>
