@@ -101,7 +101,9 @@ function EventCard({ event, onClick, delay }) {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "Not set";
-    return new Date(dateStr).toLocaleDateString("en-US", {
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return "Not set";
+    return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",

@@ -64,6 +64,15 @@ export const publishEvent = (token, eventId) =>
 export const closeEvent = (token, eventId) =>
   apiFetch(`/events/${eventId}/close`, { method: "POST", token });
 
+export const deleteEvent = (token, eventId) =>
+  apiFetch(`/events/${eventId}`, { method: "DELETE", token });
+
+export const previewEventScores = (token, eventId) =>
+  apiFetch(`/events/${eventId}/scores`, { token });
+
+export const recalculateEventScores = (token, eventId) =>
+  apiFetch(`/events/${eventId}/recalculate`, { method: "POST", token });
+
 export async function uploadEventPoster(token, eventId, file) {
   const form = new FormData();
   form.append("poster", file);
@@ -91,6 +100,14 @@ export async function uploadEventLogo(token, eventId, file) {
 export const getParticipants = (token, eventId) =>
   apiFetch(`/events/${eventId}/participants`, { token });
 
+export const removeParticipant = (token, eventId, email) =>
+  apiFetch(`/events/${eventId}/participants`, {
+    method: "DELETE",
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+
 export async function uploadParticipantsCsv(token, eventId, file) {
   const form = new FormData();
   form.append("file", file);
@@ -108,4 +125,4 @@ export const getFeedbackSummary = (token) =>
   apiFetch("/events/feedback-summary", { token });
 
 export const getSuggestions = (token) =>
-  apiFetch("/events/suggestions", { token });
+  apiFetch("/events/suggestions", { token });

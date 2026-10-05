@@ -6,6 +6,8 @@ import { getFeedbackSummary } from "@/lib/api";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Navbar from "@/components/Navbar";
 import { getTrackableFeedbackSummaries } from "./feedbackSummaryFilters.mjs";
+import { feedbackEventProgress, feedbackProgressCaption, feedbackSummaryTotals, participantCompletion } from "@/lib/feedbackProgress.mjs";
+import { comparableEmail, ratedTargetSet } from "@/lib/comparableEmail.mjs";
 
 /* ─── SVG Icons ─── */
 const CheckCircleIcon = () => (
@@ -87,7 +89,15 @@ function StatusChip({ status }) {
 }
 
 /* ─── Per-Participant Completion Badge ─── */
-function CompletionBadge({ given, required, pct }) {
+function CompletionBadge({ given, required, pct, started = false }) {
+  const completion = participantCompletion(required, given, pct);
+  if (!completion.finished && completion.percent == null) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-semibold border px-2 py-0.5 rounded-full text-slate-600 bg-slate-100 border-slate-200">
+        {completion.label}
+      </span>
+    );
+  }
   const color = pct === 100 ? "text-green-700 bg-green-50 border-green-200" : pct > 0 ? "text-amber-700 bg-amber-50 border-amber-200" : "text-slate-500 bg-slate-100 border-slate-200";
   const barColor = pct === 100 ? "#16A34A" : pct > 0 ? "#F59E0B" : "#CBD5E1";
   return (
@@ -99,7 +109,7 @@ function CompletionBadge({ given, required, pct }) {
       <div className="w-16 h-1 rounded-full bg-slate-200 overflow-hidden">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: barColor }} />
       </div>
-      <span className="text-[10px] text-brand-muted">{pct}%</span>
+      <span className="text-[10px] text-brand-muted">{started && pct < 100 ? "In progress" : `${pct}%`}</span>
     </div>
   );
 }
@@ -144,7 +154,7 @@ function EventCardSkeleton() {
 }
 
 /* ─── Participant Table ─── */
-function ParticipantTable({ participants }) {
+function ParticipantTable({ participants, allowSelfRatings = false, identifyRaters = false }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
 
@@ -207,32 +217,38 @@ function ParticipantTable({ participants }) {
               <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-brand-muted">No participants match your search.</td></tr>
             ) : (
               filtered.map((row) => (
-                <ParticipantRow key={row._id || row.email} row={row} allParticipants={participants} />
+                <ParticipantRow key={row._id || row.email} row={row} allParticipants={participants} allowSelfRatings={allowSelfRatings} identifyRaters={identifyRaters} />
               ))
             )}
           </tbody>
         </table>
       </div>
       <p className="px-4 py-2 text-[11px] text-brand-muted/70 bg-slate-50/60 border-t border-brand-stroke/20 italic">
-        ↑ Click any row to see exactly who that person gave feedback to.
+        {identifyRaters
+          ? "↑ Click any row to see exactly who that person gave feedback to."
+          : "↑ Completion counts stay visible. Who reviewed whom stays hidden until scoring is set to identify raters."}
       </p>
     </div>
   );
 }
 
 /* ─── Expandable Participant Row ─── */
-function ParticipantRow({ row, allParticipants }) {
+function ParticipantRow({ row, allParticipants, allowSelfRatings = false, identifyRaters = false }) {
   const [open, setOpen] = useState(false);
 
   // Build full picture: all peers this person should rate
-  const ratedEmailSet = new Set((row.ratedTargets || []).map((t) => t.email.toLowerCase()));
+  const ratedEmailSet = ratedTargetSet(row.ratedTargets);
+  const selfEmail = comparableEmail(row.email);
   const peers = allParticipants
-    .filter((p) => (p.email || "").toLowerCase() !== (row.email || "").toLowerCase())
-    .map((p) => ({
-      email: p.email,
-      name: p.name || p.email,
-      rated: ratedEmailSet.has((p.email || "").toLowerCase()),
-    }));
+    .filter((p) => allowSelfRatings || comparableEmail(p.email) !== selfEmail)
+    .map((p) => {
+      const self = comparableEmail(p.email) === selfEmail;
+      return {
+        email: p.email,
+        name: self ? `${p.name || "This participant"} (self)` : (p.name || p.email),
+        rated: ratedEmailSet.has(comparableEmail(p.email)),
+      };
+    });
 
   const rowBg = row.isComplete ? "hover:bg-green-50/30" : row.submittedCount > 0 ? "hover:bg-amber-50/30" : "hover:bg-slate-50/50";
 
@@ -253,7 +269,7 @@ function ParticipantRow({ row, allParticipants }) {
         <td className="px-4 py-3 text-brand-muted hidden md:table-cell">{row.committee || <span className="opacity-40">—</span>}</td>
         <td className="px-4 py-3 text-brand-muted hidden md:table-cell">{row.level || <span className="opacity-40">—</span>}</td>
         <td className="px-4 py-3 text-right">
-          <CompletionBadge given={row.submittedCount} required={row.requiredCount} pct={row.completionPct} />
+          <CompletionBadge given={row.submittedCount} required={row.requiredCount} pct={row.completionPct} started={row.started === true && !row.isComplete} />
         </td>
       </tr>
       {open && (
@@ -262,7 +278,11 @@ function ParticipantRow({ row, allParticipants }) {
             <p className="text-xs font-semibold text-brand-muted uppercase tracking-wider mb-2">
               Feedback given by {row.name || row.email} to:
             </p>
-            {peers.length === 0 ? (
+            {!identifyRaters ? (
+              <span className="text-xs text-brand-muted italic">Who reviewed whom stays hidden for this event.</span>
+            ) : row.requiredCount === 0 ? (
+              <span className="text-xs text-brand-muted italic">This event has no reviews to give.</span>
+            ) : peers.length === 0 ? (
               <span className="text-xs text-brand-muted italic">No other participants in this event.</span>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -280,8 +300,9 @@ function ParticipantRow({ row, allParticipants }) {
 function EventSummaryCard({ summary, index }) {
   const [open, setOpen] = useState(false);
 
-  const { event, totalParticipants, fullySubmittedCount, partialCount, notStartedCount, participants } = summary;
-  const pct = totalParticipants > 0 ? Math.round((fullySubmittedCount / totalParticipants) * 100) : 0;
+  const { event, totalParticipants, participants } = summary;
+  const progress = feedbackEventProgress(summary);
+  const pct = progress.percent ?? 0;
 
   const formatDate = (d) => {
     if (!d) return null;
@@ -303,7 +324,7 @@ function EventSummaryCard({ summary, index }) {
           <div className="relative shrink-0">
             <ProgressRing pct={pct} />
             <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-brand-text">
-              {pct}%
+              {progress.percent == null ? "—" : `${progress.percent}%`}
             </span>
           </div>
 
@@ -333,12 +354,14 @@ function EventSummaryCard({ summary, index }) {
               <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-slate-100 text-brand-muted px-2.5 py-1 rounded-full">
                 {totalParticipants} Participants
               </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-full">
-                <CheckCircleIcon /> {fullySubmittedCount} Complete
+              <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${progress.percent == null ? "bg-slate-100 text-brand-muted border-slate-200" : "bg-green-50 text-green-700 border-green-200"}`}>
+                {progress.percent == null ? null : <CheckCircleIcon />} {progress.completeCountLabel}
               </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full">
-                <ClockIcon /> {totalParticipants - fullySubmittedCount} Pending
-              </span>
+              {progress.percent == null ? null : (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full">
+                  <ClockIcon /> {feedbackProgressCaption(summary)}
+                </span>
+              )}
             </div>
           </div>
 
@@ -359,8 +382,8 @@ function EventSummaryCard({ summary, index }) {
           />
         </div>
         <div className="flex justify-between text-[10px] text-brand-muted mt-1">
-          <span>{fullySubmittedCount} fully complete</span>
-          <span>{totalParticipants - fullySubmittedCount} pending</span>
+          <span>{progress.barLabel}</span>
+          <span>{progress.percent == null ? "" : feedbackProgressCaption(summary)}</span>
         </div>
       </button>
 
@@ -375,7 +398,7 @@ function EventSummaryCard({ summary, index }) {
               No participants uploaded for this event yet.
             </div>
           ) : (
-            <ParticipantTable participants={participants} />
+            <ParticipantTable participants={participants} allowSelfRatings={event?.allowSelfRatings === true} identifyRaters={event?.identifyRaters === true} />
           )}
         </div>
       )}
@@ -385,33 +408,20 @@ function EventSummaryCard({ summary, index }) {
 
 /* ─── Summary Stats Bar ─── */
 function SummaryStats({ summaries }) {
-  const totals = useMemo(() => {
-    return summaries.reduce(
-      (acc, s) => ({
-        events: acc.events + 1,
-        participants: acc.participants + s.totalParticipants,
-        submitted: acc.submitted + s.fullySubmittedCount,
-        pending: acc.pending + (s.totalParticipants - s.fullySubmittedCount),
-      }),
-      { events: 0, participants: 0, submitted: 0, pending: 0 }
-    );
-  }, [summaries]);
-
-  const overallPct =
-    totals.participants > 0
-      ? Math.round((totals.submitted / totals.participants) * 100)
-      : 0;
+  const totals = useMemo(() => feedbackSummaryTotals(summaries), [summaries]);
+  const overallPct = totals.percent;
 
   const stats = [
     { label: "Events Tracked", value: totals.events, accent: "border-l-brand-primary", icon: <BarChartIcon /> },
     { label: "Total Participants", value: totals.participants, accent: "border-l-indigo-400", icon: <UsersIcon /> },
     { label: "Fully Complete", value: totals.submitted, accent: "border-l-green-500", icon: <CheckCircleIcon /> },
-    { label: "Pending", value: totals.pending, accent: "border-l-amber-400", icon: <ClockIcon /> },
-    { label: "Completion Rate", value: `${overallPct}%`, accent: "border-l-teal-400", icon: <BarChartIcon /> },
+    { label: "Not started", value: totals.pending, accent: "border-l-amber-400", icon: <ClockIcon /> },
+    { label: "In progress", value: totals.partial, accent: "border-l-orange-400", icon: <ClockIcon /> },
+    { label: "Completion Rate", value: overallPct == null ? "—" : `${overallPct}%`, accent: "border-l-teal-400", icon: <BarChartIcon /> },
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       {stats.map((s, i) => (
         <div
           key={s.label}
@@ -466,7 +476,7 @@ function FeedbackContent() {
               Feedback Analytics
             </h1>
             <p className="text-sm sm:text-base text-brand-muted mt-1">
-              Track who has submitted feedback and how many are pending per event.
+              Track who has submitted feedback and how many are pending per event. Completion is a workflow count, not an EPA score.
             </p>
           </div>
           <button

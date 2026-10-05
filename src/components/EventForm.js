@@ -363,8 +363,7 @@ export default function EventForm({
           Feedback Window
         </h2>
         <p className="text-sm text-slate-500 mt-2 font-medium">
-          Optional schedule for events that collect feedback. (Stored in UTC;
-          you&apos;ll enter in local time.)
+          Optional schedule for events that collect feedback. You can change it until the event is closed. Times are stored in UTC and entered in local time.
         </p>
 
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -373,7 +372,7 @@ export default function EventForm({
               Feedback Opening Date &amp; Time
             </label>
             <input
-              disabled={!isEditable}
+              disabled={!imagesEditable}
               type="datetime-local"
               value={openAt}
               onChange={(e) => setOpenAt(e.target.value)}
@@ -386,7 +385,7 @@ export default function EventForm({
               Tentative Feedback Closing Date &amp; Time (Optional)
             </label>
             <input
-              disabled={!isEditable}
+              disabled={!imagesEditable}
               type="datetime-local"
               value={closeAtTentative}
               onChange={(e) => setCloseAtTentative(e.target.value)}

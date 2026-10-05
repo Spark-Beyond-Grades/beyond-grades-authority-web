@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { HiOutlineArrowUpTray } from "react-icons/hi2";
-import { uploadParticipantsCsv, getParticipants } from "@/lib/api";
+import { uploadParticipantsCsv, getParticipants, removeParticipant } from "@/lib/api";
+import { csvFileFromList } from "@/lib/saveBeforeUpload.mjs";
 
 /**
  * CSV upload + participant count display.
@@ -13,27 +14,48 @@ export default function ParticipantUploader({
   participantsCount,
   setParticipantsCount,
   isEditable,
+  beforeUpload,
 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [participants, setParticipants] = useState([]);
+  const [removingEmail, setRemovingEmail] = useState("");
   const fileInputRef = useRef(null);
+
+  const refreshParticipants = async () => {
+    const token = await getToken();
+    const data = await getParticipants(token, eventId);
+    const rows = data.participants || [];
+    setParticipants(rows);
+    setParticipantsCount(rows.length);
+  };
+
+  useEffect(() => {
+    refreshParticipants().catch(() => {});
+  }, [eventId]);
 
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !isEditable) return;
 
     setUploadMsg(null);
     setUploading(true);
 
     try {
+      if (beforeUpload) await beforeUpload();
       const token = await getToken();
       const data = await uploadParticipantsCsv(token, eventId, file);
-      setUploadMsg(`✅ Uploaded ${data.inserted}/${data.total} participants`);
+      const added = Number(data.inserted) || 0;
+      const updated = Number(data.updated) || 0;
+      const total = Number(data.total) || 0;
+      const kept = Math.max(total - added - updated, 0);
+      setUploadMsg(
+        `✅ Saved ${total} participant${total === 1 ? "" : "s"}. ${added} new, ${updated} updated${kept ? `, ${kept} already on the list` : ""}.`
+      );
 
       // Refresh count
-      const p = await getParticipants(token, eventId);
-      setParticipantsCount((p.participants || []).length);
+      await refreshParticipants();
     } catch (err) {
       const details = err?.details?.errors?.slice?.(0, 3);
       if (details?.length) {
@@ -45,7 +67,7 @@ export default function ParticipantUploader({
       }
     } finally {
       setUploading(false);
-      e.target.value = "";
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -63,10 +85,10 @@ export default function ParticipantUploader({
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
+    if (!isEditable) return;
 
-    if (e.dataTransfer.files?.[0]) {
-      fileInputRef.current.files = e.dataTransfer.files;
-      handleUpload({ target: { files: e.dataTransfer.files, value: "" } });
+    if (csvFileFromList(e.dataTransfer.files)) {
+      handleUpload({ target: { files: e.dataTransfer.files } });
     }
   };
 
@@ -84,7 +106,7 @@ export default function ParticipantUploader({
         </div>
         <div className="text-right bg-blue-50/50 rounded-2xl px-5 py-3 border border-blue-100">
           <div className="text-3xl font-black text-blue-600">{participantsCount}</div>
-          <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mt-1">Total Uploaded</div>
+          <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mt-1">Participants</div>
         </div>
       </div>
 
@@ -137,7 +159,9 @@ export default function ParticipantUploader({
                 {dragActive ? "Drop your CSV here" : "Upload CSV File"}
               </p>
               <p className="text-sm text-slate-500 mt-2 font-medium">
-                Drag and drop your file or <span className="text-brand-primary">click to browse</span>
+                {isEditable
+                  ? <>Drag and drop your file or <span className="text-brand-primary">click to browse</span></>
+                  : "This event is closed, so the participant list is locked."}
               </p>
             </div>
           </div>
@@ -152,6 +176,42 @@ export default function ParticipantUploader({
         )}
 
         {/* Upload Message */}
+        {participants.length > 0 && (
+          <div className="rounded-2xl border border-slate-200 divide-y">
+            {participants.map((person) => (
+              <div key={person.email} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div>
+                  <div className="text-sm font-semibold text-slate-800">{person.name || person.email}</div>
+                  <div className="text-xs text-slate-500">{[person.email, person.level, person.committee].filter(Boolean).join(" · ")}</div>
+                </div>
+                {isEditable && (
+                  <button
+                    type="button"
+                    disabled={removingEmail === person.email}
+                    className="text-sm font-semibold text-red-600 disabled:opacity-50"
+                    onClick={async () => {
+                      if (!window.confirm(`Remove ${person.name || person.email} from this event? Their reviews will be removed too.`)) return;
+                      setRemovingEmail(person.email);
+                      try {
+                        const token = await getToken();
+                        await removeParticipant(token, eventId, person.email);
+                        await refreshParticipants();
+                        setUploadMsg(`✅ Removed ${person.name || person.email}`);
+                      } catch (err) {
+                        setUploadMsg(`❌ ${err.message || "Could not remove participant"}`);
+                      } finally {
+                        setRemovingEmail("");
+                      }
+                    }}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {uploadMsg && (
           <div className={`rounded-2xl p-5 text-sm font-bold shadow-sm border transition-all ${uploadMsg.startsWith("✅")
             ? "bg-green-50 border-green-200 text-green-800"

@@ -10,6 +10,9 @@ import {
   getParticipants,
   closeEvent,
   uploadEventPoster,
+  deleteEvent,
+  previewEventScores,
+  recalculateEventScores,
 } from "@/lib/api";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -19,7 +22,58 @@ import EventForm from "@/components/EventForm";
 import TeamStructureEditor from "@/components/TeamStructureEditor";
 import SkillsPicker from "@/components/SkillsPicker";
 import ParticipantUploader from "@/components/ParticipantUploader";
+import ScoringSettings from "@/components/ScoringSettings";
+import { coverageSentence } from "@/lib/coverageSentence.mjs";
+import { previewAuditLabel, snapshotSavedLabel } from "@/lib/previewAudit.mjs";
+import { previewConfidenceLabel, previewEventScoreLine, previewSkillScoreLine } from "@/lib/previewScore.mjs";
+import { participantUploadPlan } from "@/lib/saveBeforeUpload.mjs";
+import { feedbackWindowLabel } from "@/lib/feedbackWindow";
+import { toDateTimeLocal, toIsoDateTime } from "@/lib/dateTimeLocal";
 import PublishBar from "@/components/PublishBar";
+
+function missingSettingLabel(key) {
+  const labels = {
+    scoringConfig: "scoring setup",
+    scaleMin: "lowest raw rating",
+    scaleMax: "highest raw rating",
+    scaleRange: "a scale whose highest rating is above the lowest",
+    levelInfluence: "level influence",
+    committeeWeightSame: "same-committee weight",
+    committeeWeightTop: "top-rank weight",
+    committeeWeightOther: "other-committee weight",
+    credibilityEpsilon: "a credibility constant above zero",
+    credibilityShrinkage: "credibility shrinkage",
+    confidencePrior: "confidence prior",
+    evenMedianRule: "even-median rule",
+    allowSelfRatings: "self-rating choice",
+    blankSkillPolicy: "blank-skill rule",
+    unscoredSkillPolicy: "unscored-skill rule",
+    crossEventRule: "cross-event rule",
+    applyRelevanceToSkillWeights: "whether relevance replaces skill weights",
+    contributesToScoring: "whether this event counts toward EPA",
+    levelRank: "a level on every participant",
+    committee: "a committee on every participant",
+    minimumRatings: "a valid minimum review count",
+  };
+  if (key.startsWith("nonNegative:relevance:")) {
+    const [, , committee, skill] = key.split(":");
+    return `relevance for ${committee} and ${skill} of zero or higher`;
+  }
+  if (key.startsWith("nonNegative:skillWeight:")) {
+    return `a skill weight for ${key.slice("nonNegative:skillWeight:".length)} of zero or higher`;
+  }
+  if (key.startsWith("nonNegative:")) {
+    const field = key.slice("nonNegative:".length);
+    return `a ${labels[field] || field} of zero or higher`;
+  }
+  if (key.startsWith("levelRank:")) return `a rank for ${key.slice("levelRank:".length)}`;
+  if (key.startsWith("skillWeight:")) return `a skill weight for ${key.slice("skillWeight:".length)}`;
+  if (key.startsWith("relevance:")) {
+    const [, committee, skill] = key.split(":");
+    return `relevance for ${committee} and ${skill}`;
+  }
+  return labels[key] || key;
+}
 
 function EventContent() {
   const { id } = useParams();
@@ -50,6 +104,8 @@ function EventContent() {
 
   // Skills
   const [skills, setSkills] = useState([]);
+  const [scoringConfig, setScoringConfig] = useState({});
+  const [scorePreview, setScorePreview] = useState(null);
 
   // Participants
   const [participantsCount, setParticipantsCount] = useState(0);
@@ -62,6 +118,7 @@ function EventContent() {
   const isPublished = event?.status === "PUBLISHED";
   const isClosed = event?.status === "CLOSED" || !!event?.closeAtActual;
   const isEditable = event?.effectiveStatus === "DRAFT";
+  const coverageLine = coverageSentence(scorePreview?.coverage);
   const imagesEditable = !isClosed;
 
   const load = useCallback(async () => {
@@ -78,18 +135,12 @@ function EventContent() {
 
       // Populate form
       setName(ev?.name || "");
-      setEventStartDate(ev?.eventStartDate ? new Date(ev.eventStartDate).toISOString().slice(0, 16) : "");
-      setEventEndDate(ev?.eventEndDate ? new Date(ev.eventEndDate).toISOString().slice(0, 16) : "");
+      setEventStartDate(toDateTimeLocal(ev?.eventStartDate));
+      setEventEndDate(toDateTimeLocal(ev?.eventEndDate));
       setVenue(ev?.venue || "");
       setDescription(ev?.description || "");
-      setOpenAt(
-        ev?.openAt ? new Date(ev.openAt).toISOString().slice(0, 16) : ""
-      );
-      setCloseAtTentative(
-        ev?.closeAtTentative
-          ? new Date(ev.closeAtTentative).toISOString().slice(0, 16)
-          : ""
-      );
+      setOpenAt(toDateTimeLocal(ev?.openAt));
+      setCloseAtTentative(toDateTimeLocal(ev?.closeAtTentative));
       setPosterUrl(ev?.posterUrl || null);
       setPoster(null);
       setLogoUrl(ev?.logoUrl || null);
@@ -97,6 +148,8 @@ function EventContent() {
       setLevels(ev?.levels || []);
       setCommittees(ev?.committees || []);
       setSkills(ev?.skills || []);
+      setScoringConfig(ev?.scoringConfig || {});
+      setScorePreview(ev?.frozenScores || null);
     } catch (e) {
       setError(e.message || "Failed to load event");
     } finally {
@@ -111,17 +164,16 @@ function EventContent() {
   /** Build the payload from current form state. */
   const buildPayload = () => ({
     name,
-    eventStartDate: eventStartDate ? new Date(eventStartDate).toISOString() : null,
-    eventEndDate: eventEndDate ? new Date(eventEndDate).toISOString() : null,
+    eventStartDate: toIsoDateTime(eventStartDate),
+    eventEndDate: toIsoDateTime(eventEndDate),
     venue,
     description,
-    openAt: openAt ? new Date(openAt).toISOString() : null,
-    closeAtTentative: closeAtTentative
-      ? new Date(closeAtTentative).toISOString()
-      : null,
+    openAt: toIsoDateTime(openAt),
+    closeAtTentative: toIsoDateTime(closeAtTentative),
     levels,
     committees,
     skills,
+    scoringConfig,
     posterUrl,
     logoUrl,
   });
@@ -152,33 +204,31 @@ function EventContent() {
         setLogo(null);
       }
 
-      // Draft: save full form. Published: persist image URLs (uploads + removals).
-      if (isEditable) {
-        const payload = {
-          ...buildPayload(),
-          posterUrl: currentPosterUrl,
-          logoUrl: currentLogoUrl,
-        };
-        const data = await updateEvent(token, id, payload);
-        setEvent(data.event);
-      } else {
-        const imagesChanged =
-          currentPosterUrl !== (event?.posterUrl || null) ||
-          currentLogoUrl !== (event?.logoUrl || null);
-        if (imagesChanged) {
-          const data = await updateEvent(token, id, {
+      // Draft saves the whole form. A published event still needs its scoring settings saved.
+      const data = isEditable
+        ? await updateEvent(token, id, {
+            ...buildPayload(),
             posterUrl: currentPosterUrl,
             logoUrl: currentLogoUrl,
+          })
+        : await updateEvent(token, id, {
+            posterUrl: currentPosterUrl,
+            logoUrl: currentLogoUrl,
+            openAt: toIsoDateTime(openAt),
+            closeAtTentative: toIsoDateTime(closeAtTentative),
+            scoringConfig,
           });
-          setEvent(data.event);
-        }
-      }
+      setEvent(data.event);
+      if (Array.isArray(data.event?.levels)) setLevels(data.event.levels);
+      if (Array.isArray(data.event?.committees)) setCommittees(data.event.committees);
+      if (Array.isArray(data.event?.skills)) setSkills(data.event.skills);
+      if (data.event?.scoringConfig) setScoringConfig(data.event.scoringConfig);
+      setSuccessMsg(isEditable ? "✅ Draft saved successfully" : "✅ Scoring saved");
+      setTimeout(() => setSuccessMsg(null), 3000);
     } catch (e) {
       setError(e.message || "Failed to save");
     } finally {
       setSaving(false);
-      setSuccessMsg(isEditable ? "✅ Draft saved successfully" : "✅ Images updated");
-      setTimeout(() => setSuccessMsg(null), 3000);
     }
   };
   const handlePublish = async () => {
@@ -224,6 +274,53 @@ function EventContent() {
     router.push(`/events/${id}/published`);
   };
 
+  const handleDelete = async () => {
+    const yes = confirm("Delete this event and its participants and feedback?");
+    if (!yes) return;
+    try {
+      const token = await getToken();
+      await deleteEvent(token, id);
+      router.push("/dashboard");
+    } catch (e) {
+      setActionMsg(e.message || "Delete failed");
+    }
+  };
+
+  const handleRecalculate = async () => {
+    const yes = confirm("Recalculate scores and keep the previous result in the audit history?");
+    if (!yes) return;
+    try {
+      const token = await getToken();
+      const data = await recalculateEventScores(token, id);
+      setEvent((current) => ({ ...(current || {}), frozenScores: data.frozenScores, frozenScoreHistory: data.history }));
+      setScorePreview(data.frozenScores);
+      setActionMsg("Scores recalculated. The previous snapshot is kept.");
+    } catch (e) {
+      setActionMsg(e.message || "Recalculate failed");
+    }
+  };
+
+  const handlePreviewScores = async () => {
+    try {
+      const token = await getToken();
+      const saved = await updateEvent(token, id, isEditable ? buildPayload() : {
+        posterUrl,
+        logoUrl,
+        openAt: toIsoDateTime(openAt),
+        closeAtTentative: toIsoDateTime(closeAtTentative),
+        scoringConfig,
+      });
+      if (Array.isArray(saved.event?.levels)) setLevels(saved.event.levels);
+      if (Array.isArray(saved.event?.committees)) setCommittees(saved.event.committees);
+      if (Array.isArray(saved.event?.skills)) setSkills(saved.event.skills);
+      if (saved.event?.scoringConfig) setScoringConfig(saved.event.scoringConfig);
+      const data = await previewEventScores(token, id);
+      setScorePreview(data.scored);
+    } catch (e) {
+      setActionMsg(e.message || "Score preview failed");
+    }
+  };
+
   const handleClose = async () => {
     const yes = confirm("Close feedback now? This cannot be undone.");
     if (!yes) return;
@@ -232,9 +329,11 @@ function EventContent() {
     setClosing(true);
     try {
       const token = await getToken();
+      await updateEvent(token, id, { scoringConfig });
       const data = await closeEvent(token, id);
       setEvent(data.event);
-      setActionMsg("✅ Feedback closed");
+      setScorePreview(data.event?.frozenScores || null);
+      setActionMsg("✅ Feedback closed. The scores below are the frozen snapshot.");
     } catch (e) {
       setActionMsg(`❌ ${e.message || "Close failed"}`);
     } finally {
@@ -284,8 +383,18 @@ function EventContent() {
                 ? "Complete setup and publish."
                 : isClosed
                   ? "This event is closed. Editing is locked."
-                  : "Event details are locked. You can still replace logo and poster images."}
+                  : "Event details are locked. You can still update scoring settings, the logo, and the poster."}
             </p>
+            {!isEditable && (
+              <p className="text-sm text-slate-700 mt-1 font-semibold">
+                {feedbackWindowLabel({
+                  isClosed,
+                  openAt,
+                  closeAtTentative,
+                  lateSubmissions: scoringConfig?.lateSubmissions,
+                })}
+              </p>
+            )}
           </div>
           <button
             onClick={() => router.push("/dashboard")}
@@ -296,7 +405,7 @@ function EventContent() {
         </div>
 
         {/* Close Action */}
-        {event?.effectiveStatus === "OPEN" && (
+        {event?.status === "PUBLISHED" && !event?.closeAtActual && (
           <div className="mt-4 flex items-center gap-3">
             <button
               type="button"
@@ -375,12 +484,86 @@ function EventContent() {
               isEditable={isEditable}
             />
 
+            <ScoringSettings
+              levels={levels}
+              committees={committees}
+              skills={skills}
+              value={scoringConfig}
+              onChange={setScoringConfig}
+              disabled={isClosed}
+            />
+            <div className="mt-3 flex flex-wrap gap-2">
+              {!isClosed ? (
+                <button type="button" onClick={handlePreviewScores} className="rounded-full bg-slate-900 px-4 py-2 text-sm text-white">
+                  Save scoring and preview
+                </button>
+              ) : null}
+              <button type="button" onClick={handleRecalculate} className="rounded-full border border-slate-300 px-4 py-2 text-sm">
+                Recalculate and keep history
+              </button>
+            </div>
+            {(event?.frozenScoreHistory || []).length ? (
+              <p className="mt-3 text-sm text-slate-600">
+                Audit history: {event.frozenScoreHistory.length} earlier snapshot{event.frozenScoreHistory.length === 1 ? "" : "s"}.
+                Latest previous freeze {event.frozenScoreHistory.at(-1)?.frozenAt || "has no timestamp"}.
+              </p>
+            ) : null}
+            {isClosed && scorePreview ? (
+              <p className="mt-3 text-sm text-slate-600">Frozen snapshot from when this event was closed. Recalculate only if you intend to replace it and keep this one in the history.</p>
+            ) : null}
+            {scorePreview?.frozenAt ? (
+              <p className="mt-1 text-sm text-slate-600">{snapshotSavedLabel(scorePreview.frozenAt, Intl.DateTimeFormat().resolvedOptions().timeZone)}</p>
+            ) : null}
+            {scorePreview ? (
+              <p className="mt-3 text-sm font-medium text-slate-800">Score status: {previewAuditLabel(scorePreview, isClosed)}</p>
+            ) : null}
+            {scorePreview?.formulaVersion ? (
+              <p className="mt-1 text-sm text-slate-600">Formula {scorePreview.formulaVersion}. {scorePreview.eligible === false ? "This event is excluded from EPA." : ""}</p>
+            ) : null}
+            {coverageLine ? (
+              <p className="mt-1 text-sm text-slate-600">{coverageLine}</p>
+            ) : null}
+            {scorePreview?.missing?.length ? (
+              <p className="mt-3 text-sm text-amber-700">Still needed: {scorePreview.missing.map(missingSettingLabel).join(", ")}</p>
+            ) : null}
+            {scorePreview?.participants?.length ? (
+              <div className="mt-3 divide-y rounded-xl bg-slate-50 px-4 text-sm">
+                {scorePreview.participants.map((person) => (
+                  <div key={person.email} className="py-3">
+                    <div className="flex justify-between gap-4">
+                      <span>{person.name ? `${person.name} · ${person.email}` : person.email}</span>
+                      <span>
+                        {previewEventScoreLine(person.eventScore, person.scaleMin ?? scorePreview.scaleMin, person.scaleMax ?? scorePreview.scaleMax, person.reason, person.status)}
+                      </span>
+                    </div>
+                    {previewConfidenceLabel(person.confidence) ? <p className="text-slate-500">{previewConfidenceLabel(person.confidence)}</p> : null}
+                    {(person.skills || []).map((skill) => (
+                      <p key={skill.skill} className="text-slate-600">
+                        {previewSkillScoreLine(skill.skill, skill.score, person.scaleMin ?? scorePreview.scaleMin, person.scaleMax ?? scorePreview.scaleMax, skill.reason, skill.confidence)}
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <button type="button" onClick={handleDelete} className="mt-4 text-sm font-medium text-red-600">
+              Delete event
+            </button>
+
             <ParticipantUploader
               eventId={id}
               getToken={getToken}
               participantsCount={participantsCount}
               setParticipantsCount={setParticipantsCount}
-              isEditable={isEditable}
+              isEditable={!isClosed}
+              beforeUpload={participantUploadPlan(isEditable).saveFormFirst ? async () => {
+                const token = await getToken();
+                const data = await updateEvent(token, id, buildPayload());
+                if (Array.isArray(data.event?.levels)) setLevels(data.event.levels);
+                if (Array.isArray(data.event?.committees)) setCommittees(data.event.committees);
+                if (Array.isArray(data.event?.skills)) setSkills(data.event.skills);
+                if (data.event?.scoringConfig) setScoringConfig(data.event.scoringConfig);
+              } : undefined}
             />
 
             {/* Elegant Floating Save Pill (Sticky) */}
@@ -394,13 +577,7 @@ function EventContent() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={
-                  saving ||
-                  (!isEditable &&
-                    !(poster || logo) &&
-                    posterUrl === (event?.posterUrl || null) &&
-                    logoUrl === (event?.logoUrl || null))
-                }
+                disabled={saving || isClosed}
                 className="flex items-center gap-2 rounded-full bg-brand-primary text-white font-semibold px-8 py-2.5 shadow-sm hover:shadow-md hover:opacity-95 disabled:opacity-60 transition-all"
               >
                 {saving && (
@@ -408,9 +585,11 @@ function EventContent() {
                 )}
                 {saving
                   ? "Saving..."
-                  : isEditable
-                    ? "Save Changes"
-                    : "Save Images"}
+                  : isClosed
+                    ? "Closed"
+                    : isEditable
+                      ? "Save Changes"
+                      : "Save scoring"}
               </button>
             </div>
           </div>
