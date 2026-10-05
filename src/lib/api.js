@@ -70,9 +70,6 @@ export const deleteEvent = (token, eventId) =>
 export const previewEventScores = (token, eventId) =>
   apiFetch(`/events/${eventId}/scores`, { token });
 
-export const recalculateEventScores = (token, eventId) =>
-  apiFetch(`/events/${eventId}/recalculate`, { method: "POST", token });
-
 export async function uploadEventPoster(token, eventId, file) {
   const form = new FormData();
   form.append("poster", file);
