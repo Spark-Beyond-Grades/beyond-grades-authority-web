@@ -8,7 +8,7 @@ A **Next.js 16** web portal for authority users to manage feedback events, team 
 |---|---|
 | Framework | Next.js 16 (App Router) |
 | Styling | Tailwind CSS 4 |
-| Auth | Firebase Auth (Microsoft OAuth) |
+| Auth | Firebase Auth (Microsoft and Google OAuth) |
 | Backend | REST API at configured `NEXT_PUBLIC_API_BASE_URL` |
 
 ## Getting Started
@@ -36,7 +36,15 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 NEXT_PUBLIC_API_BASE_URL=https://your-backend.example.com
 ```
 
-### 3. Run the dev server
+### 3. Enable the Firebase sign-in providers
+
+In the same Firebase project used by Microsoft, open **Authentication → Sign-in method** and enable **Google**. Set the project's public-facing name and support email, then save. Keep Microsoft enabled as well.
+
+Under **Authentication → Settings → Authorized domains**, include the deployed portal domain and `localhost` for local development. Google uses the existing Firebase environment variables; no additional client secret belongs in the frontend.
+
+Both providers send a Firebase ID token to the existing `/auth/sync` endpoint. Google users must still have an active entry in the authority allowlist. If Firebase reports that an email already uses another provider, sign in using the original provider; this portal does not automatically link accounts.
+
+### 4. Run the dev server
 
 ```bash
 npm run dev
@@ -53,7 +61,7 @@ src/
 │   ├── page.js                # Root redirect (→ dashboard or login)
 │   ├── error.js               # Global error boundary
 │   ├── not-found.js           # 404 page
-│   ├── login/page.js          # Microsoft OAuth login
+│   ├── login/page.js          # Microsoft and Google OAuth login
 │   ├── access-denied/page.js  # 403 page
 │   ├── dashboard/
 │   │   ├── page.js            # Events list + create
@@ -76,13 +84,15 @@ src/
 └── lib/
     ├── api.js                 # REST API client (centralized)
     ├── authMicrosoft.js       # Microsoft OAuth popup
+    ├── authGoogle.js          # Google OAuth popup
+    ├── authErrorMessage.mjs   # Actionable sign-in errors
     └── firebase.js            # Firebase app init
 ```
 
 ## Auth Flow
 
-1. User clicks **"Continue with Microsoft"** on `/login`
-2. Firebase handles Microsoft OAuth popup → returns ID token
+1. User clicks **"Continue with Microsoft"** or **"Continue with Google"** on `/login`
+2. Firebase handles the chosen provider's OAuth popup → returns a Firebase ID token
 3. Token sent to backend `/auth/sync` for allowlist check
 4. `AuthProvider` manages token state and auto-refreshes before expiry
 5. Protected routes redirect to `/login` if unauthenticated
@@ -95,3 +105,4 @@ src/
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint |
+| `npm test` | Run unit tests, including Firebase provider and error handling tests |

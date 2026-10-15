@@ -1,0 +1,72 @@
+.page { min-height: 100svh; display: grid; grid-template-columns: 1fr 1fr; background: #f8fbfa; color: #0f172a; }
+.hero { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: clamp(32px, 4vw, 64px); color: #fff; background: radial-gradient(ellipse at 90% 70%, #117c78 0%, transparent 65%), #073e3e; }
+.hero::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(#ffffff06 1px, transparent 1px), linear-gradient(90deg, #ffffff06 1px, transparent 1px); background-size: 56px 56px; mask-image: linear-gradient(135deg, transparent, #000); pointer-events: none; }
+.hero::after { content: ""; position: absolute; width: 480px; height: 480px; bottom: -300px; right: -160px; border: 1px solid #ffffff20; border-radius: 50%; box-shadow: 0 0 0 65px #ffffff05, 0 0 0 130px #ffffff03; pointer-events: none; }
+.brand, .heroContent, .heroFooter { position: relative; z-index: 1; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand img { border-radius: 12px; }
+.brand strong { display: block; font-size: 19px; letter-spacing: -0.5px; }
+.brand span { display: block; margin-top: 3px; font-size: 11px; color: #b3d5d2; }
+.heroContent { max-width: 490px; margin: 64px 0; }
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 2.5px; color: #95e8d8; }
+.heroContent h2 { margin: 20px 0; font-size: clamp(32px, 3.25vw, 52px); font-weight: 600; letter-spacing: -1.8px; line-height: 1.16; }
+.heroContent h2 span { color: #9aecd9; }
+.heroContent > p { max-width: 370px; font-size: 15px; line-height: 1.8; color: #cee1de; }
+.growthCard { margin-top: 40px; padding: 24px; border: 1px solid #ffffff26; border-radius: 20px; background: #ffffff08; box-shadow: 0 20px 50px #002a2a25; }
+.growthHeading { display: flex; align-items: center; gap: 12px; }
+.growthIcon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; color: #abf0db; background: #ffffff0f; font-size: 20px; }
+.growthHeading strong { display: block; font-size: 14px; font-weight: 500; }
+.growthHeading span:not(.growthIcon) { display: block; margin-top: 3px; font-size: 11px; color: #c0d9d6; }
+.journey { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; border-top: 1px solid #ffffff1a; padding-top: 24px; margin-top: 24px; }
+.journeyStep { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.journeyStep svg { width: 20px; height: 20px; color: #9aecd9; margin-bottom: 4px; }
+.journeyStep strong { font-size: 12px; font-weight: 500; }
+.journeyStep span { font-size: 10px; line-height: 1.6; color: #c0d9d6; }
+.heroFooter { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #c0d9d6; }
+.heroFooter svg { color: #9aecd9; }
+.loginPanel { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 64px 36px 28px; }
+.loginContent { width: 100%; max-width: 420px; margin: auto 0; padding: 36px 0; }
+.portalBadge { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border: 1px solid #d4e9e2; border-radius: 100px; font-size: 11px; font-weight: 500; color: #16645b; background: #ecf7f2; }
+.portalBadge svg { width: 14px; height: 14px; }
+.loginContent h1 { margin: 20px 0 12px; font-size: clamp(32px, 3vw, 42px); font-weight: 600; line-height: 1.2; letter-spacing: -1.5px; }
+.loginContent h1 > span { color: #0c8b8a; }
+.intro { font-size: 14px; line-height: 1.8; color: #475569; max-width: 380px; }
+.signInCard { margin-top: 30px; padding: 28px; border: 1px solid #e1e9e5; border-radius: 20px; background: #fff; box-shadow: 0 6px 12px #073e3e03, 0 18px 48px #073e3e06; }
+.cardHeading h2 { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+.cardHeading p { margin-top: 6px; font-size: 12px; line-height: 1.6; color: #475569; }
+.providerList { display: grid; gap: 12px; margin-top: 24px; }
+.providerButton { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 12px 16px; border: 1px solid #d8e2dd; border-radius: 12px; background: #fff; color: #1e293b; font-size: 13px; font-weight: 500; text-align: left; cursor: pointer; transition: border-color 180ms, background 180ms, box-shadow 180ms; }
+.providerButton:hover:not(:disabled) { background: #f5fbf8; border-color: #0c8b8a; box-shadow: 0 2px 8px #073e3e08; }
+.providerButton:focus-visible { outline: 3px solid #0c8b8a; outline-offset: 4px; }
+.providerButton:disabled { cursor: wait; opacity: 0.55; }
+.providerButton[aria-busy="true"] { opacity: 1; border-color: #0c8b8a; background: #f5fbf8; }
+.providerIcon { display: grid; place-items: center; width: 24px; flex-shrink: 0; }
+.buttonArrow { margin-left: auto; color: #64748b; flex-shrink: 0; }
+.spinner { width: 20px; height: 20px; border: 2px solid #c6e5dd; border-top-color: #0c8b8a; border-radius: 50%; animation: spin 800ms linear infinite; }
+.status { margin-top: 16px; font-size: 11px; line-height: 1.6; text-align: center; color: #475569; }
+.error { margin-top: 16px; padding: 12px 14px; border: 1px solid #fecaca; border-radius: 10px; background: #fff5f5; color: #991b1b; font-size: 12px; line-height: 1.7; }
+.secureNote { display: flex; justify-content: center; align-items: center; gap: 7px; border-top: 1px solid #edf1ee; margin-top: 24px; padding-top: 20px; font-size: 10px; color: #475569; line-height: 1.6; }
+.secureNote svg { flex-shrink: 0; width: 12px; height: 12px; }
+.accessNote { display: flex; align-items: flex-start; justify-content: center; gap: 8px; margin-top: 24px; font-size: 11px; line-height: 1.8; color: #475569; text-align: center; }
+.accessNote svg { flex-shrink: 0; margin-top: 3px; width: 14px; height: 14px; color: #0c8b8a; }
+.footer { display: flex; align-items: center; gap: 12px; font-size: 10px; color: #475569; }
+.footer span { color: #94a3b8; }
+.mobileBrand { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 1023px) {
+  .page { grid-template-columns: 1fr; }
+  .hero { display: none; }
+  .loginPanel { min-height: 100svh; padding: 28px 24px 24px; }
+  .mobileBrand { display: flex; align-items: center; gap: 10px; font-size: 17px; letter-spacing: -0.4px; }
+  .mobileBrand img { border-radius: 10px; }
+  .loginContent { padding: 40px 0; }
+}
+@media (max-width: 400px) {
+  .loginPanel { padding-left: 20px; padding-right: 20px; }
+  .signInCard { padding: 22px 18px; }
+  .providerButton { font-size: 12px; gap: 10px; padding-left: 12px; padding-right: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .providerButton { transition: none; }
+  .spinner { animation: none; }
+}
